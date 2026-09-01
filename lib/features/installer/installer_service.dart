@@ -21,4 +21,12 @@ class InstallerService {
       'filePath': filePath,
     });
   }
+
+  Future<bool> canRequestPackageInstalls() async {
+    return await _channel.invokeMethod<bool>('canRequestPackageInstalls') ?? false;
+  }
+
+  Future<void> openInstallPermissionSettings() {
+    return _channel.invokeMethod<void>('openInstallPermissionSettings');
+  }
 }

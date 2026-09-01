@@ -12,29 +12,29 @@
 
 ## Phase 2: API Integration
 
-- [ ] Align response parsing with final tRPC response format.
+- [x] Align response parsing with REST API response format.
 - [ ] Add latest release endpoint usage.
-- [ ] Add signed download URL endpoint.
+- [x] Add signed download URL endpoint.
 - [ ] Add refresh action.
-- [ ] Add empty and error states with short text.
+- [x] Add empty and error states with short text.
 
 ## Phase 3: Local Package Checks
 
-- [ ] Check installed versionCode by package name.
-- [ ] Show `Installed`, `Update`, or `Not installed`.
-- [ ] Block downgrade installs unless user explicitly chooses dev behavior.
+- [x] Check installed versionCode by package name.
+- [x] Show `Installed`, `Update`, or `Not installed`.
+- [x] Block downgrade installs unless user explicitly chooses dev behavior.
 
 ## Phase 4: Download UX
 
-- [ ] Show download progress.
-- [ ] Verify APK SHA-256.
-- [ ] Keep one APK file per release.
+- [x] Show download progress.
+- [x] Verify APK SHA-256.
+- [x] Keep one APK file per release.
 - [ ] Add retry for failed downloads.
 
 ## Phase 5: Android Install Flow
 
-- [ ] Request unknown app install permission when needed.
-- [ ] Open settings page if install permission is missing.
+- [x] Request unknown app install permission when needed.
+- [x] Open settings page if install permission is missing.
 - [ ] Re-check installed version after returning from installer.
 
 ## Phase 6: Release Build
