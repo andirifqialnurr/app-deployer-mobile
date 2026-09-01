@@ -15,7 +15,8 @@
 - [x] Align response parsing with REST API response format.
 - [ ] Add latest release endpoint usage.
 - [x] Add signed download URL endpoint.
-- [ ] Add refresh action.
+- [x] Add refresh action.
+- [x] Refresh app list automatically while Apps page is open.
 - [x] Add empty and error states with short text.
 
 ## Phase 3: Local Package Checks

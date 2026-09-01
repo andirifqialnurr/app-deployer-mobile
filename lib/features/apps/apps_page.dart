@@ -1,14 +1,46 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_detail_page.dart';
 import 'apps_repository.dart';
 
-class AppsPage extends ConsumerWidget {
+class AppsPage extends ConsumerStatefulWidget {
   const AppsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppsPage> createState() => _AppsPageState();
+}
+
+class _AppsPageState extends ConsumerState<AppsPage> with WidgetsBindingObserver {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      ref.invalidate(appsProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(appsProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final appsAsync = ref.watch(appsProvider);
 
     return Scaffold(
@@ -16,39 +48,63 @@ class AppsPage extends ConsumerWidget {
       body: appsAsync.when(
         data: (apps) {
           if (apps.isEmpty) {
-            return const Center(child: Text('Belum ada app.'));
+            return RefreshIndicator(
+              onRefresh: () async => ref.refresh(appsProvider.future),
+              child: ListView(
+                children: const [
+                  SizedBox(height: 240),
+                  Center(child: Text('Belum ada app.')),
+                ],
+              ),
+            );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, index) {
-              final app = apps[index];
-              final release = app.latestRelease;
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.android),
-                  title: Text(app.name),
-                  subtitle: Text(
-                    release == null
-                        ? app.packageName
-                        : '${app.packageName} - v${release.versionName}',
+          return RefreshIndicator(
+            onRefresh: () async => ref.refresh(appsProvider.future),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                final app = apps[index];
+                final release = app.latestRelease;
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.android),
+                    title: Text(app.name),
+                    subtitle: Text(
+                      release == null
+                          ? app.packageName
+                          : '${app.packageName} - v${release.versionName}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AppDetailPage(app: app),
+                        ),
+                      );
+                    },
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => AppDetailPage(app: app),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemCount: apps.length,
+                );
+              },
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemCount: apps.length,
+            ),
           );
         },
-        error: (error, _) => Center(child: Text('Gagal memuat app: $error')),
+        error: (error, _) => RefreshIndicator(
+          onRefresh: () async => ref.refresh(appsProvider.future),
+          child: ListView(
+            children: [
+              const SizedBox(height: 240),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Gagal memuat app: $error'),
+                ),
+              ),
+            ],
+          ),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
