@@ -20,6 +20,32 @@ Installer Service
   -> PackageManager and FileProvider
 ```
 
+## Bootstrap Flow
+
+The first install of App Deployer Mobile is manual:
+
+```text
+Android browser
+  -> App Deployer Web dashboard
+  -> Download Mobile App
+  -> Android Package Installer
+  -> App Deployer Mobile installed
+```
+
+This is required because there is no Google Play Store distribution channel.
+
+## Client App Flow
+
+```text
+Admin uploads client APK in web dashboard
+  -> Web stores APK in private R2 bucket
+  -> Web stores release metadata in PostgreSQL
+  -> App Deployer Mobile refreshes app list
+  -> New or Update status appears
+  -> Client downloads APK
+  -> Android Package Installer updates the target app
+```
+
 ## Runtime Components
 
 - Flutter renders Material 3 UI.

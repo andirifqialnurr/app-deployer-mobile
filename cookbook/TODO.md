@@ -17,6 +17,7 @@
 - [x] Add signed download URL endpoint.
 - [x] Add refresh action.
 - [x] Refresh app list automatically while Apps page is open.
+- [x] Show new/update status on app list.
 - [x] Add empty and error states with short text.
 
 ## Phase 3: Local Package Checks
