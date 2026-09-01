@@ -17,6 +17,10 @@ class DownloadService {
   final Dio _dio;
 
   Future<File> downloadRelease(AppRelease release) async {
+    final signedUrlResponse = await _dio.get('/api/releases/${release.id}/download-url');
+    final signedUrlJson = signedUrlResponse.data as Map<String, dynamic>;
+    final downloadUrl = signedUrlJson['downloadUrl'] as String;
+
     final dir = await getApplicationDocumentsDirectory();
     final apkDir = Directory('${dir.path}/apks');
     if (!await apkDir.exists()) {
@@ -25,9 +29,7 @@ class DownloadService {
 
     final file = File('${apkDir.path}/${release.id}-${release.versionCode}.apk');
 
-    // The web API will later return a signed URL. The current base contract keeps
-    // object keys explicit so the UI can be wired before storage credentials exist.
-    await _dio.download('/download/${release.apkObjectKey}', file.path);
+    await _dio.download(downloadUrl, file.path);
     return file;
   }
 }

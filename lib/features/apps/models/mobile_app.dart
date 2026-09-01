@@ -18,9 +18,9 @@ class MobileApp {
   final AppRelease? latestRelease;
 
   factory MobileApp.fromJson(Map<String, dynamic> json) {
-    final releases = json['releases'];
-    final latest = releases is List && releases.isNotEmpty
-        ? AppRelease.fromJson(releases.first as Map<String, dynamic>)
+    final latestReleaseJson = json['latestRelease'];
+    final latest = latestReleaseJson is Map<String, dynamic>
+        ? AppRelease.fromJson(latestReleaseJson)
         : null;
 
     return MobileApp(
