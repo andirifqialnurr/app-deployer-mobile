@@ -4,11 +4,30 @@
 .packages
 build
 coverage
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and generated local files
 *.iml
 *.log
+.metadata
 android/.gradle
 android/app/debug
 android/app/profile
 android/app/release
 android/local.properties
-pubspec.lock
+
+# Android signing secrets
+android/key.properties
+android/app/key.properties
+*.jks
+*.keystore
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.idea
+.vscode

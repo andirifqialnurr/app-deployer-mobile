@@ -5,9 +5,9 @@ class DownloadsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: AppBar(title: Text('Downloads')),
-      body: Center(child: Text('Belum ada download.')),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Downloads')),
+      body: const Center(child: Text('Belum ada download.')),
     );
   }
 }
