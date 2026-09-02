@@ -5,6 +5,9 @@
     <application
         android:label="App Deployer"
         android:name="${applicationName}">
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
