@@ -28,6 +28,7 @@ if (releaseTaskRequested && !releaseSigningReady) {
 android {
     namespace "com.appdeployer.mobile"
     compileSdk 35
+    ndkVersion "28.2.13676358"
 
     defaultConfig {
         applicationId "com.appdeployer.mobile"

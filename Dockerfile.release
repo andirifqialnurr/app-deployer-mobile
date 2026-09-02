@@ -1,5 +1,14 @@
 FROM ghcr.io/cirruslabs/flutter:3.44.0
 
+USER root
+
 WORKDIR /workspace
 
 ENV CI=true
+ENV ANDROID_NDK_VERSION=28.2.13676358
+
+# Flutter 3.44 / the Android Gradle toolchain may require this side-by-side
+# NDK during release builds. Install it in the builder image so every VPS
+# deploy has the same Android toolchain available.
+RUN yes | sdkmanager --licenses >/dev/null \
+    && sdkmanager --install "ndk;${ANDROID_NDK_VERSION}"
