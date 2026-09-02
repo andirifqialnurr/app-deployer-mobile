@@ -1,0 +1,14 @@
+.git
+.dart_tool
+build
+coverage
+android/.gradle
+android/app/debug
+android/app/profile
+android/app/release
+.env
+.env.*
+*.jks
+*.keystore
+android/local.properties
+*.log

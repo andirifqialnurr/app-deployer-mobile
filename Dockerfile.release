@@ -1,0 +1,5 @@
+FROM ghcr.io/cirruslabs/flutter:3.44.0
+
+WORKDIR /workspace
+
+ENV CI=true
