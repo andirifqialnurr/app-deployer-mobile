@@ -7,6 +7,7 @@ class AppRelease {
     required this.apkObjectKey,
     required this.apkSizeBytes,
     required this.apkSha256,
+    required this.createdAt,
     this.changelog,
   });
 
@@ -17,6 +18,7 @@ class AppRelease {
   final String apkObjectKey;
   final int apkSizeBytes;
   final String apkSha256;
+  final DateTime createdAt;
   final String? changelog;
 
   factory AppRelease.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class AppRelease {
       apkObjectKey: json['apkObjectKey'] as String,
       apkSizeBytes: int.parse(json['apkSizeBytes'].toString()),
       apkSha256: json['apkSha256'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
       changelog: json['changelog'] as String?,
     );
   }

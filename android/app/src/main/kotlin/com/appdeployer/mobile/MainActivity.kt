@@ -37,6 +37,30 @@ class MainActivity : FlutterActivity() {
                     openApkInstaller(filePath)
                     result.success(null)
                 }
+                "openInstalledApp" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName.isNullOrBlank()) {
+                        result.error("INVALID_PACKAGE", "packageName is required", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(openInstalledApp(packageName))
+                }
+                "openAppInfo" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName.isNullOrBlank()) {
+                        result.error("INVALID_PACKAGE", "packageName is required", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(openAppInfo(packageName))
+                }
+                "requestUninstall" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName.isNullOrBlank()) {
+                        result.error("INVALID_PACKAGE", "packageName is required", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(requestUninstall(packageName))
+                }
                 "canRequestPackageInstalls" -> {
                     result.success(canRequestPackageInstalls())
                 }
@@ -76,6 +100,37 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun openInstalledApp(packageName: String): Boolean {
+        val intent = packageManager.getLaunchIntentForPackage(packageName) ?: return false
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return startIntent(intent)
+    }
+
+    private fun openAppInfo(packageName: String): Boolean {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return startIntent(intent)
+    }
+
+    private fun requestUninstall(packageName: String): Boolean {
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return startIntent(intent)
+    }
+
+    private fun startIntent(intent: Intent): Boolean {
+        return try {
+            startActivity(intent)
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun canRequestPackageInstalls(): Boolean {

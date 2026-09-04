@@ -22,6 +22,27 @@ class InstallerService {
     });
   }
 
+  Future<bool> openInstalledApp(String packageName) async {
+    return await _channel.invokeMethod<bool>('openInstalledApp', {
+          'packageName': packageName,
+        }) ??
+        false;
+  }
+
+  Future<bool> openAppInfo(String packageName) async {
+    return await _channel.invokeMethod<bool>('openAppInfo', {
+          'packageName': packageName,
+        }) ??
+        false;
+  }
+
+  Future<bool> requestUninstall(String packageName) async {
+    return await _channel.invokeMethod<bool>('requestUninstall', {
+          'packageName': packageName,
+        }) ??
+        false;
+  }
+
   Future<bool> canRequestPackageInstalls() async {
     return await _channel.invokeMethod<bool>('canRequestPackageInstalls') ?? false;
   }

@@ -39,7 +39,7 @@
 
 - [x] Request unknown app install permission when needed.
 - [x] Open settings page if install permission is missing.
-- [ ] Re-check installed version after returning from installer.
+- [x] Re-check installed version after returning from installer.
 
 ## Phase 6: Release Build
 
@@ -51,8 +51,8 @@
 
 - [x] Use received-byte progress from Dio for the current foreground download.
 - [x] Add `INTERNET` permission to the release manifest.
-- [ ] Expose received bytes and total bytes instead of passing percentage only.
-- [ ] Show a real progress bar, downloaded size, total size, and transfer status.
+- [x] Expose received bytes and total bytes instead of passing percentage only.
+- [x] Show a real progress bar, downloaded size, total size, and transfer status.
 - [ ] Use `apkSizeBytes` only as a fallback when the response has no `Content-Length`.
 - [ ] Move APK downloads to Android `DownloadManager` or a native foreground download service.
 - [ ] Show persistent Android notification with real download progress.
@@ -62,39 +62,39 @@
 - [ ] Resume or safely restart an interrupted download.
 - [ ] Delete incomplete or hash-mismatched APK files.
 - [ ] Persist download jobs so status survives app restart.
-- [ ] Verify SHA-256 before opening the installer.
+- [x] Verify SHA-256 before opening the installer.
 
 ## Phase 8: DeployGate-Style App Detail
 
-- [ ] Redesign the app detail header with app icon, app name, project/package name, version, version code, and upload source.
-- [ ] Add primary `Open` action for an installed app.
-- [ ] Add `Install` action when the app is not installed.
-- [ ] Add `Update` action when a newer release is available.
-- [ ] Add `Uninstall` action that opens the Android uninstall confirmation dialog.
-- [ ] Add `Open App Info` action that navigates to Android application settings.
-- [ ] Handle apps that are not launchable or have no launcher activity.
-- [ ] Re-check installed version after returning from install/update flow.
-- [ ] Show release changelog and APK size in the detail page.
-- [ ] Show download/verification/install status without losing the current release context.
+- [x] Redesign the app detail header with app icon, app name, project/package name, version, version code, and upload source.
+- [x] Add primary `Open` action for an installed app.
+- [x] Add `Install` action when the app is not installed.
+- [x] Add `Update` action when a newer release is available.
+- [x] Add `Uninstall` action that opens the Android uninstall confirmation dialog.
+- [x] Add `Open App Info` action that navigates to Android application settings.
+- [x] Handle apps that are not launchable or have no launcher activity.
+- [x] Re-check installed version after returning from install/update flow.
+- [x] Show release changelog and APK size in the detail page.
+- [x] Show download/verification/install status without losing the current release context.
 
 ## Phase 9: Revisions
 
-- [ ] Add a revisions section or page to the app detail screen.
-- [ ] Load all active releases for the selected app from the web API.
-- [ ] Show version name, version code, channel, upload date, APK size, and changelog.
-- [ ] Mark the installed release and latest release clearly.
-- [ ] Allow downloading/installing a selected revision when it is not a downgrade.
+- [x] Add a revisions section or page to the app detail screen.
+- [x] Load all active releases for the selected app from the web API.
+- [x] Show version name, version code, channel, upload date, APK size, and changelog.
+- [x] Mark the installed release and latest release clearly.
+- [x] Allow downloading/installing a selected revision when it is not a downgrade.
 - [ ] Show an explicit downgrade warning when developer behavior allows it.
-- [ ] Handle an empty revision list and unavailable revision gracefully.
+- [x] Handle an empty revision list and unavailable revision gracefully.
 
 ## Phase 10: Deferred Actions and Android Integration
 
-- [ ] Show a `Coming Soon` dialog when `Distributions` is tapped.
-- [ ] Show a `Coming Soon` dialog when `Start Replay Capture` is tapped.
-- [ ] Keep these placeholders visible in the app detail layout without starting unfinished flows.
-- [ ] Implement Android launch intent for `Open`.
-- [ ] Implement `Intent.ACTION_DELETE` for `Uninstall`.
-- [ ] Implement `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for `Open App Info`.
+- [x] Show a `Coming Soon` dialog when `Distributions` is tapped.
+- [x] Show a `Coming Soon` dialog when `Start Replay Capture` is tapped.
+- [x] Keep these placeholders visible in the app detail layout without starting unfinished flows.
+- [x] Implement Android launch intent for `Open`.
+- [x] Implement `Intent.ACTION_DELETE` for `Uninstall`.
+- [x] Implement `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for `Open App Info`.
 - [ ] Review Android 13+ notification permission for download notifications.
 - [ ] Review foreground-service declarations if the chosen downloader requires them.
 - [ ] Keep FileProvider authorities and APK paths package-scoped and secure.

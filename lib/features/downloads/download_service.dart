@@ -21,6 +21,7 @@ class DownloadService {
   Future<DownloadResult> downloadRelease(
     AppRelease release, {
     void Function(int progress)? onProgress,
+    void Function(int receivedBytes, int totalBytes)? onReceiveProgress,
   }) async {
     final signedUrlResponse = await _dio.get('/api/releases/${release.id}/download-url');
     final signedUrlJson = signedUrlResponse.data as Map<String, dynamic>;
@@ -39,6 +40,7 @@ class DownloadService {
       downloadUrl,
       file.path,
       onReceiveProgress: (received, total) {
+        onReceiveProgress?.call(received, total);
         if (total > 0) {
           onProgress?.call(((received / total) * 100).round());
         }
