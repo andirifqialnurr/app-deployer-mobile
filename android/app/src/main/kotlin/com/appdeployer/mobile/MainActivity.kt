@@ -34,8 +34,7 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_FILE", "filePath is required", null)
                         return@setMethodCallHandler
                     }
-                    openApkInstaller(filePath)
-                    result.success(null)
+                    result.success(openApkInstaller(filePath))
                 }
                 "openInstalledApp" -> {
                     val packageName = call.argument<String>("packageName")
@@ -87,7 +86,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun openApkInstaller(filePath: String) {
+    private fun openApkInstaller(filePath: String): Boolean {
         val file = File(filePath)
         val uri: Uri = FileProvider.getUriForFile(
             this,
@@ -99,7 +98,7 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        startActivity(intent)
+        return startIntent(intent)
     }
 
     private fun openInstalledApp(packageName: String): Boolean {

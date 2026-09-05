@@ -416,9 +416,23 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
         return;
       }
 
-      await installer.openApkInstaller(result.file.path);
+      final opened = await installer.openApkInstaller(result.file.path);
+      if (!mounted) return;
+
       messenger.showSnackBar(
-        const SnackBar(content: Text('Installer Android dibuka.')),
+        SnackBar(
+          content: Text(
+            opened
+                ? 'Installer Android dibuka.'
+                : 'APK selesai diunduh, tapi installer Android tidak bisa dibuka.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('Download gagal: $error')),
       );
     } finally {
       if (mounted) {

@@ -16,10 +16,11 @@ class InstallerService {
     });
   }
 
-  Future<void> openApkInstaller(String filePath) {
-    return _channel.invokeMethod<void>('openApkInstaller', {
-      'filePath': filePath,
-    });
+  Future<bool> openApkInstaller(String filePath) async {
+    return await _channel.invokeMethod<bool>('openApkInstaller', {
+          'filePath': filePath,
+        }) ??
+        false;
   }
 
   Future<bool> openInstalledApp(String packageName) async {

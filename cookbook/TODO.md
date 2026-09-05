@@ -58,8 +58,8 @@
 - [ ] Prevent duplicate downloads for the same release.
 - [ ] Add a visible cancel button for the current foreground Dio download.
 - [ ] Add a visible pause button for the current foreground Dio download, implemented as cancel plus resumable restart only after backend range support exists.
-- [ ] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
-- [ ] Show a clear error when Android package installer cannot be opened.
+- [x] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
+- [x] Show a clear error when Android package installer cannot be opened.
 - [ ] Use `apkSizeBytes` only as a fallback when the response has no `Content-Length`.
 - [ ] Support retry for failed downloads.
 - [ ] Delete incomplete or hash-mismatched APK files.
