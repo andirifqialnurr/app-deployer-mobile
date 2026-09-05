@@ -36,24 +36,45 @@ class DownloadService {
 
     final file = File('${apkDir.path}/${release.id}-${release.versionCode}.apk');
 
-    await _dio.download(
-      downloadUrl,
-      file.path,
-      onReceiveProgress: (received, total) {
-        onReceiveProgress?.call(received, total);
-        if (total > 0) {
-          onProgress?.call(((received / total) * 100).round());
-        }
-      },
-    );
+    try {
+      await _dio.download(
+        downloadUrl,
+        file.path,
+        deleteOnError: true,
+        onReceiveProgress: (received, total) {
+          final totalBytes = total > 0 ? total : release.apkSizeBytes;
+          onReceiveProgress?.call(received, totalBytes);
+          if (totalBytes > 0) {
+            final progress = received >= totalBytes
+                ? 100
+                : ((received / totalBytes) * 100).floor();
+            onProgress?.call(progress.clamp(0, 100));
+          }
+        },
+      );
+    } catch (_) {
+      await _deleteIfExists(file);
+      rethrow;
+    }
 
     final actualSha256 = await calculateSha256(file);
+    final verified = actualSha256.toLowerCase() == expectedSha256.toLowerCase();
+    if (!verified) {
+      await _deleteIfExists(file);
+    }
+
     return DownloadResult(
       file: file,
-      verified: actualSha256.toLowerCase() == expectedSha256.toLowerCase(),
+      verified: verified,
       expectedSha256: expectedSha256,
       actualSha256: actualSha256,
     );
+  }
+}
+
+Future<void> _deleteIfExists(File file) async {
+  if (await file.exists()) {
+    await file.delete();
   }
 }
 
