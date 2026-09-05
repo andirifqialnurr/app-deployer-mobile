@@ -49,20 +49,45 @@
 
 ## Phase 7: Reliable APK Download
 
+### Phase 7A: Current Flutter Download Flow
+
 - [x] Use received-byte progress from Dio for the current foreground download.
 - [x] Add `INTERNET` permission to the release manifest.
 - [x] Expose received bytes and total bytes instead of passing percentage only.
 - [x] Show a real progress bar, downloaded size, total size, and transfer status.
-- [ ] Use `apkSizeBytes` only as a fallback when the response has no `Content-Length`.
-- [ ] Move APK downloads to Android `DownloadManager` or a native foreground download service.
-- [ ] Show persistent Android notification with real download progress.
-- [ ] Support queued, downloading, verifying, completed, failed, cancelled, and expired states.
-- [ ] Support retry for failed downloads.
 - [ ] Prevent duplicate downloads for the same release.
-- [ ] Resume or safely restart an interrupted download.
+- [ ] Add a visible cancel button for the current foreground Dio download.
+- [ ] Add a visible pause button for the current foreground Dio download, implemented as cancel plus resumable restart only after backend range support exists.
+- [ ] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
+- [ ] Show a clear error when Android package installer cannot be opened.
+- [ ] Use `apkSizeBytes` only as a fallback when the response has no `Content-Length`.
+- [ ] Support retry for failed downloads.
 - [ ] Delete incomplete or hash-mismatched APK files.
-- [ ] Persist download jobs so status survives app restart.
 - [x] Verify SHA-256 before opening the installer.
+
+### Phase 7B: Android DownloadManager
+
+- [ ] Move APK downloads to Android `DownloadManager`.
+- [ ] Show Android system download notification with real progress.
+- [ ] Poll `DownloadManager.Query` and sync native status back to Flutter.
+- [ ] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
+- [ ] Verify SHA-256 after `DownloadManager` reports success.
+- [ ] Auto-open the Android package installer from the completion flow when the app is in foreground.
+- [ ] Show a notification or in-app action to install when completion happens while the app is backgrounded.
+- [ ] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
+- [ ] Prevent duplicate `DownloadManager` jobs for the same release.
+- [ ] Safely remove cancelled or failed download jobs.
+- [ ] Persist native download job ids so status survives app restart.
+
+### Phase 7C: Native Foreground Downloader and True Pause/Resume
+
+- [ ] Add a native foreground download service only if `DownloadManager` is not enough.
+- [ ] Add notification channel and foreground-service notification actions for pause, resume, cancel, and install.
+- [ ] Add Android 13+ notification permission request if custom notifications require it.
+- [ ] Add foreground service declarations and review Android version-specific restrictions.
+- [ ] Resume interrupted APK downloads using HTTP `Range` and persisted partial files.
+- [ ] Validate resumed files by final SHA-256 before opening installer.
+- [ ] Keep a fallback path when a server does not support `Range`.
 
 ## Phase 8: DeployGate-Style App Detail
 
@@ -95,8 +120,8 @@
 - [x] Implement Android launch intent for `Open`.
 - [x] Implement `Intent.ACTION_DELETE` for `Uninstall`.
 - [x] Implement `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for `Open App Info`.
-- [ ] Review Android 13+ notification permission for download notifications.
-- [ ] Review foreground-service declarations if the chosen downloader requires them.
+- [ ] Review Android 13+ notification permission for custom download notifications.
+- [ ] Review foreground-service declarations if the native foreground downloader is used.
 - [ ] Keep FileProvider authorities and APK paths package-scoped and secure.
 
 ## Phase 11: Release Validation and Safety
