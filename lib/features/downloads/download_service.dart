@@ -14,9 +14,16 @@ final downloadServiceProvider = Provider<DownloadService>((ref) {
 });
 
 class DownloadService {
-  const DownloadService(this._dio);
+  DownloadService(this._dio)
+      : _directDownloadDio = Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(minutes: 10),
+          ),
+        );
 
   final Dio _dio;
+  final Dio _directDownloadDio;
 
   Future<DownloadResult> downloadRelease(
     AppRelease release, {
@@ -26,6 +33,7 @@ class DownloadService {
     final signedUrlResponse = await _dio.get('/api/releases/${release.id}/download-url');
     final signedUrlJson = signedUrlResponse.data as Map<String, dynamic>;
     final downloadUrl = signedUrlJson['downloadUrl'] as String;
+    final fallbackDownloadUrl = signedUrlJson['fallbackDownloadUrl'] as String?;
     final expectedSha256 = signedUrlJson['apkSha256'] as String? ?? release.apkSha256;
 
     final dir = await getApplicationDocumentsDirectory();
@@ -36,25 +44,36 @@ class DownloadService {
 
     final file = File('${apkDir.path}/${release.id}-${release.versionCode}.apk');
 
+    void handleProgress(int received, int total) {
+      final totalBytes = total > 0 ? total : release.apkSizeBytes;
+      onReceiveProgress?.call(received, totalBytes);
+      if (totalBytes > 0) {
+        final progress = received >= totalBytes ? 100 : ((received / totalBytes) * 100).floor();
+        onProgress?.call(progress.clamp(0, 100));
+      }
+    }
+
     try {
-      await _dio.download(
+      await _directDownloadDio.download(
         downloadUrl,
         file.path,
         deleteOnError: true,
-        onReceiveProgress: (received, total) {
-          final totalBytes = total > 0 ? total : release.apkSizeBytes;
-          onReceiveProgress?.call(received, totalBytes);
-          if (totalBytes > 0) {
-            final progress = received >= totalBytes
-                ? 100
-                : ((received / totalBytes) * 100).floor();
-            onProgress?.call(progress.clamp(0, 100));
-          }
-        },
+        options: Options(responseType: ResponseType.bytes),
+        onReceiveProgress: handleProgress,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
       await _deleteIfExists(file);
-      rethrow;
+      if (fallbackDownloadUrl == null || fallbackDownloadUrl.isEmpty) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+
+      await _dio.download(
+        fallbackDownloadUrl,
+        file.path,
+        deleteOnError: true,
+        options: Options(responseType: ResponseType.bytes),
+        onReceiveProgress: handleProgress,
+      );
     }
 
     final actualSha256 = await calculateSha256(file);

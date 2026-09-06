@@ -61,7 +61,7 @@
 - [x] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
 - [x] Show a clear error when Android package installer cannot be opened.
 - [x] Use `apkSizeBytes` only as a fallback when the response has no `Content-Length`.
-- [ ] Support retry for failed downloads.
+- [x] Retry through the authenticated web download endpoint when the direct R2 signed URL fails.
 - [x] Delete incomplete or hash-mismatched APK files.
 - [x] Verify SHA-256 before opening the installer.
 
