@@ -129,6 +129,7 @@
 - [ ] Verify the release APK is non-debuggable and signed by the stable keystore.
 - [ ] Verify certificate continuity between bootstrap APK updates.
 - [x] Test APK download, installer launch, and update confirmation on the Android emulator.
+- [x] Verify installed-app status, `Open` action, and absence of an unnecessary `Update` action on the Android emulator.
 - [ ] Test install, update, uninstall, and open actions on a physical Android device.
 - [ ] Test interrupted download, retry, app restart, and device rotation.
 - [ ] Test checksum failure and expired download URL.
