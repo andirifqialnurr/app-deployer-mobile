@@ -122,12 +122,13 @@
 - [x] Implement `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for `Open App Info`.
 - [ ] Review Android 13+ notification permission for custom download notifications.
 - [ ] Review foreground-service declarations if the native foreground downloader is used.
-- [ ] Keep FileProvider authorities and APK paths package-scoped and secure.
+- [x] Keep FileProvider authorities and APK paths package-scoped and secure.
 
 ## Phase 11: Release Validation and Safety
 
 - [ ] Verify the release APK is non-debuggable and signed by the stable keystore.
 - [ ] Verify certificate continuity between bootstrap APK updates.
+- [x] Test APK download, installer launch, and update confirmation on the Android emulator.
 - [ ] Test install, update, uninstall, and open actions on a physical Android device.
 - [ ] Test interrupted download, retry, app restart, and device rotation.
 - [ ] Test checksum failure and expired download URL.

@@ -36,7 +36,11 @@ class DownloadService {
     final fallbackDownloadUrl = signedUrlJson['fallbackDownloadUrl'] as String?;
     final expectedSha256 = signedUrlJson['apkSha256'] as String? ?? release.apkSha256;
 
-    final dir = await getApplicationDocumentsDirectory();
+    // FileProvider exposes the app's files directory, while
+    // getApplicationDocumentsDirectory() resolves to Flutter's private
+    // `app_flutter` directory on Android. Keep the APK in the support
+    // directory so the native installer can create a safe content URI.
+    final dir = await getApplicationSupportDirectory();
     final apkDir = Directory('${dir.path}/apks');
     if (!await apkDir.exists()) {
       await apkDir.create(recursive: true);

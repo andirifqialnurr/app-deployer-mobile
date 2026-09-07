@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../downloads/download_service.dart';
+import '../downloads/download_result.dart';
 import '../installer/installer_service.dart';
 import 'apps_repository.dart';
 import 'install_status.dart';
@@ -392,21 +393,31 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
       _totalBytes = 0;
     });
 
+    DownloadResult result;
     try {
-      final result = await ref.read(downloadServiceProvider).downloadRelease(
-            release,
-            onProgress: (progress) {
-              if (mounted) setState(() => _progress = progress);
-            },
-            onReceiveProgress: (receivedBytes, totalBytes) {
-              if (!mounted) return;
-              setState(() {
-                _receivedBytes = receivedBytes;
-                _totalBytes = totalBytes;
-              });
-            },
-          );
+      result = await ref.read(downloadServiceProvider).downloadRelease(
+        release,
+        onProgress: (progress) {
+          if (mounted) setState(() => _progress = progress);
+        },
+        onReceiveProgress: (receivedBytes, totalBytes) {
+          if (!mounted) return;
+          setState(() {
+            _receivedBytes = receivedBytes;
+            _totalBytes = totalBytes;
+          });
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
 
+      messenger.showSnackBar(
+        SnackBar(content: Text('Download gagal: $error')),
+      );
+      return;
+    }
+
+    try {
       if (!mounted) return;
 
       if (!result.verified) {
@@ -432,7 +443,7 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
       if (!mounted) return;
 
       messenger.showSnackBar(
-        SnackBar(content: Text('Download gagal: $error')),
+        SnackBar(content: Text('Installer gagal dibuka: $error')),
       );
     } finally {
       if (mounted) {
