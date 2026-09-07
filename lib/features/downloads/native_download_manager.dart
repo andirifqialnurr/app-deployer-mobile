@@ -29,6 +29,7 @@ class NativeDownloadManager {
     required String fileName,
     required String title,
     required String description,
+    Map<String, String> headers = const {},
     required void Function(int receivedBytes, int totalBytes) onProgress,
   }) async {
     final downloadId = await _channel.invokeMethod<int>('enqueueApkDownload', {
@@ -36,11 +37,15 @@ class NativeDownloadManager {
       'fileName': fileName,
       'title': title,
       'description': description,
+      'headers': headers,
     });
 
     if (downloadId == null) {
       throw const NativeDownloadException('Android download could not be queued.');
     }
+
+    var lastReceivedBytes = 0;
+    var lastProgressAt = DateTime.now();
 
     try {
       while (true) {
@@ -59,6 +64,16 @@ class NativeDownloadManager {
         final receivedBytes = _asInt(rawStatus['receivedBytes']);
         final totalBytes = _asInt(rawStatus['totalBytes']);
         onProgress(receivedBytes, totalBytes);
+
+        if (receivedBytes > lastReceivedBytes) {
+          lastReceivedBytes = receivedBytes;
+          lastProgressAt = DateTime.now();
+        } else if (DateTime.now().difference(lastProgressAt) >
+            const Duration(seconds: 45)) {
+          throw NativeDownloadException(
+            'Android download stalled at $receivedBytes bytes.',
+          );
+        }
 
         if (status == 'successful') {
           final filePath = rawStatus['filePath'] as String?;

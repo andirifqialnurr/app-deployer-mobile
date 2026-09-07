@@ -88,6 +88,7 @@ class MainActivity : FlutterActivity() {
                     val fileName = call.argument<String>("fileName")
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
+                    val headers = call.argument<Map<*, *>>("headers") ?: emptyMap<Any, Any>()
                     if (url.isNullOrBlank() || fileName.isNullOrBlank()) {
                         result.error("INVALID_DOWNLOAD", "url and fileName are required", null)
                         return@setMethodCallHandler
@@ -98,6 +99,7 @@ class MainActivity : FlutterActivity() {
                             fileName = fileName,
                             title = title,
                             description = description,
+                            headers = headers,
                         )
                     )
                 }
@@ -128,6 +130,7 @@ class MainActivity : FlutterActivity() {
         fileName: String,
         title: String?,
         description: String?,
+        headers: Map<*, *>,
     ): Long {
         val request = DownloadManager.Request(Uri.parse(url)).apply {
             setTitle(title ?: "APK download")
@@ -138,6 +141,11 @@ class MainActivity : FlutterActivity() {
             )
             setAllowedOverMetered(true)
             setAllowedOverRoaming(false)
+            headers.forEach { (key, value) ->
+                if (key is String && value is String) {
+                    addRequestHeader(key, value)
+                }
+            }
             setDestinationInExternalFilesDir(
                 this@MainActivity,
                 Environment.DIRECTORY_DOWNLOADS,

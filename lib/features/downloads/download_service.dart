@@ -30,6 +30,10 @@ class DownloadService {
     final downloadUrl = signedUrlJson['downloadUrl'] as String;
     final fallbackDownloadUrl = signedUrlJson['fallbackDownloadUrl'] as String?;
     final expectedSha256 = signedUrlJson['apkSha256'] as String? ?? release.apkSha256;
+    final resolvedFallbackDownloadUrl = fallbackDownloadUrl == null ||
+            fallbackDownloadUrl.isEmpty
+        ? null
+        : _resolveUrl(fallbackDownloadUrl, _dio.options.baseUrl);
 
     // FileProvider exposes the app's files directory, while
     // getApplicationDocumentsDirectory() resolves to Flutter's private
@@ -52,46 +56,76 @@ class DownloadService {
       }
     }
 
-    late final File downloadedFile;
+    File? downloadedFile;
+
+    final nativeDownloadUrl = resolvedFallbackDownloadUrl ?? downloadUrl;
+    final nativeHeaders = <String, String>{
+      if (_dio.options.headers['Authorization'] is String)
+        'Authorization': _dio.options.headers['Authorization'] as String,
+    };
 
     try {
       final nativeResult = await _nativeDownloadManager.downloadApk(
-        url: downloadUrl,
+        url: nativeDownloadUrl,
         fileName: '${release.id}-${release.versionCode}.apk',
         title: '${release.versionName} APK',
         description: 'Downloading APK',
+        headers: nativeHeaders,
         onProgress: handleProgress,
       );
       downloadedFile = File(nativeResult.filePath);
     } catch (error, stackTrace) {
       await _deleteIfExists(file);
-      if (fallbackDownloadUrl == null || fallbackDownloadUrl.isEmpty) {
-        Error.throwWithStackTrace(error, stackTrace);
+
+      final dioUrls = <String>[
+        if (nativeDownloadUrl != downloadUrl) downloadUrl,
+        if (resolvedFallbackDownloadUrl != null) resolvedFallbackDownloadUrl,
+      ];
+      Object lastError = error;
+      StackTrace lastStackTrace = stackTrace;
+
+      for (final dioUrl in dioUrls) {
+        try {
+          await _dio.download(
+            dioUrl,
+            file.path,
+            deleteOnError: true,
+            options: Options(responseType: ResponseType.bytes),
+            onReceiveProgress: handleProgress,
+          );
+          downloadedFile = file;
+          break;
+        } catch (fallbackError, fallbackStackTrace) {
+          await _deleteIfExists(file);
+          lastError = fallbackError;
+          lastStackTrace = fallbackStackTrace;
+        }
       }
 
-      await _dio.download(
-        fallbackDownloadUrl,
-        file.path,
-        deleteOnError: true,
-        options: Options(responseType: ResponseType.bytes),
-        onReceiveProgress: handleProgress,
-      );
-      downloadedFile = file;
+      if (downloadedFile == null) {
+        Error.throwWithStackTrace(lastError, lastStackTrace);
+      }
     }
 
-    final actualSha256 = await calculateSha256(downloadedFile);
+    final completedFile = downloadedFile;
+    final actualSha256 = await calculateSha256(completedFile);
     final verified = actualSha256.toLowerCase() == expectedSha256.toLowerCase();
     if (!verified) {
-      await _deleteIfExists(downloadedFile);
+      await _deleteIfExists(completedFile);
     }
 
     return DownloadResult(
-      file: downloadedFile,
+      file: completedFile,
       verified: verified,
       expectedSha256: expectedSha256,
       actualSha256: actualSha256,
     );
   }
+}
+
+String _resolveUrl(String value, String baseUrl) {
+  if (Uri.tryParse(value)?.hasScheme == true) return value;
+  return Uri.parse(baseUrl).resolve(value).toString();
 }
 
 Future<void> _deleteIfExists(File file) async {
