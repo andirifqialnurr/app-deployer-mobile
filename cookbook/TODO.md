@@ -135,3 +135,17 @@
 - [ ] Test checksum failure and expired download URL.
 - [ ] Review `REQUEST_INSTALL_PACKAGES` and `QUERY_ALL_PACKAGES` against the intended distribution channel.
 - [ ] Document why package installation and package visibility permissions are required.
+
+## Phase 12: OneSignal Update Notifications
+
+- [ ] Add the OneSignal Flutter SDK and configure the OneSignal App ID through release configuration.
+- [ ] Configure the Android platform in OneSignal with the required Firebase credentials.
+- [ ] Request `POST_NOTIFICATIONS` permission at an appropriate point on Android 13+.
+- [ ] Register the device subscription and keep its OneSignal identity available to the app.
+- [ ] Define app/release targeting metadata so update notifications can identify the affected app.
+- [ ] Handle notification messages while the app is in the foreground.
+- [ ] Handle notification taps and deep-link to the matching app detail page.
+- [ ] Refresh the matching app and show its `Update` action after an update notification is opened.
+- [ ] Test notification delivery while the app is foregrounded, backgrounded, and terminated.
+- [ ] Test notification permission denial and recovery through Android settings.
+- [ ] Document that OneSignal is a hosted provider; only the App Deployer integration remains self-managed.
