@@ -8,22 +8,17 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/api/api_client.dart';
 import '../apps/models/app_release.dart';
 import 'download_result.dart';
+import 'native_download_manager.dart';
 
 final downloadServiceProvider = Provider<DownloadService>((ref) {
-  return DownloadService(ref.watch(dioProvider));
+  return DownloadService(ref.watch(dioProvider), const NativeDownloadManager());
 });
 
 class DownloadService {
-  DownloadService(this._dio)
-      : _directDownloadDio = Dio(
-          BaseOptions(
-            connectTimeout: const Duration(seconds: 30),
-            receiveTimeout: const Duration(minutes: 10),
-          ),
-        );
+  DownloadService(this._dio, this._nativeDownloadManager);
 
   final Dio _dio;
-  final Dio _directDownloadDio;
+  final NativeDownloadManager _nativeDownloadManager;
 
   Future<DownloadResult> downloadRelease(
     AppRelease release, {
@@ -57,14 +52,17 @@ class DownloadService {
       }
     }
 
+    late final File downloadedFile;
+
     try {
-      await _directDownloadDio.download(
-        downloadUrl,
-        file.path,
-        deleteOnError: true,
-        options: Options(responseType: ResponseType.bytes),
-        onReceiveProgress: handleProgress,
+      final nativeResult = await _nativeDownloadManager.downloadApk(
+        url: downloadUrl,
+        fileName: '${release.id}-${release.versionCode}.apk',
+        title: '${release.versionName} APK',
+        description: 'Downloading APK',
+        onProgress: handleProgress,
       );
+      downloadedFile = File(nativeResult.filePath);
     } catch (error, stackTrace) {
       await _deleteIfExists(file);
       if (fallbackDownloadUrl == null || fallbackDownloadUrl.isEmpty) {
@@ -78,16 +76,17 @@ class DownloadService {
         options: Options(responseType: ResponseType.bytes),
         onReceiveProgress: handleProgress,
       );
+      downloadedFile = file;
     }
 
-    final actualSha256 = await calculateSha256(file);
+    final actualSha256 = await calculateSha256(downloadedFile);
     final verified = actualSha256.toLowerCase() == expectedSha256.toLowerCase();
     if (!verified) {
-      await _deleteIfExists(file);
+      await _deleteIfExists(downloadedFile);
     }
 
     return DownloadResult(
-      file: file,
+      file: downloadedFile,
       verified: verified,
       expectedSha256: expectedSha256,
       actualSha256: actualSha256,

@@ -1,0 +1,103 @@
+import 'package:flutter/services.dart';
+
+class NativeDownloadException implements Exception {
+  const NativeDownloadException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class NativeDownloadResult {
+  const NativeDownloadResult({
+    required this.downloadId,
+    required this.filePath,
+  });
+
+  final int downloadId;
+  final String filePath;
+}
+
+class NativeDownloadManager {
+  const NativeDownloadManager();
+
+  static const _channel = MethodChannel('app_deployer/download_manager');
+
+  Future<NativeDownloadResult> downloadApk({
+    required String url,
+    required String fileName,
+    required String title,
+    required String description,
+    required void Function(int receivedBytes, int totalBytes) onProgress,
+  }) async {
+    final downloadId = await _channel.invokeMethod<int>('enqueueApkDownload', {
+      'url': url,
+      'fileName': fileName,
+      'title': title,
+      'description': description,
+    });
+
+    if (downloadId == null) {
+      throw const NativeDownloadException('Android download could not be queued.');
+    }
+
+    try {
+      while (true) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        final rawStatus = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+          'queryDownload',
+          {'downloadId': downloadId},
+        );
+
+        if (rawStatus == null) {
+          throw const NativeDownloadException('Android download no longer exists.');
+        }
+
+        final status = rawStatus['status'] as String?;
+        final receivedBytes = _asInt(rawStatus['receivedBytes']);
+        final totalBytes = _asInt(rawStatus['totalBytes']);
+        onProgress(receivedBytes, totalBytes);
+
+        if (status == 'successful') {
+          final filePath = rawStatus['filePath'] as String?;
+          if (filePath == null || filePath.isEmpty) {
+            throw const NativeDownloadException(
+              'Android download completed without a file path.',
+            );
+          }
+
+          return NativeDownloadResult(
+            downloadId: downloadId,
+            filePath: filePath,
+          );
+        }
+
+        if (status == 'failed') {
+          final reason = rawStatus['reason'];
+          throw NativeDownloadException(
+            'Android download failed${reason == null ? '.' : ' (reason $reason).'}',
+          );
+        }
+      }
+    } catch (_) {
+      await removeDownload(downloadId);
+      rethrow;
+    }
+  }
+
+  Future<bool> removeDownload(int downloadId) async {
+    return await _channel.invokeMethod<bool>(
+          'removeDownload',
+          {'downloadId': downloadId},
+        ) ??
+        false;
+  }
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return 0;
+  }
+}

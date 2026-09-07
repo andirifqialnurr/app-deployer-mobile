@@ -67,12 +67,12 @@
 
 ### Phase 7B: Android DownloadManager
 
-- [ ] Move APK downloads to Android `DownloadManager`.
-- [ ] Show Android system download notification with real progress.
-- [ ] Poll `DownloadManager.Query` and sync native status back to Flutter.
+- [x] Move APK downloads to Android `DownloadManager`.
+- [x] Request the Android system download notification with real progress.
+- [x] Poll `DownloadManager.Query` and sync native status back to Flutter.
 - [ ] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
-- [ ] Verify SHA-256 after `DownloadManager` reports success.
-- [ ] Auto-open the Android package installer from the completion flow when the app is in foreground.
+- [x] Verify SHA-256 after `DownloadManager` reports success.
+- [x] Auto-open the Android package installer from the completion flow when the app is in foreground.
 - [ ] Show a notification or in-app action to install when completion happens while the app is backgrounded.
 - [ ] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
 - [ ] Prevent duplicate `DownloadManager` jobs for the same release.
