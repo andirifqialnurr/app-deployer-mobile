@@ -22,7 +22,6 @@ class AppDetailPage extends ConsumerStatefulWidget {
 class _AppDetailPageState extends ConsumerState<AppDetailPage>
     with WidgetsBindingObserver {
   InstallStatus _status = const InstallStatus(state: InstallState.checking);
-  final Set<String> _installerOpenedForReleaseIds = <String>{};
 
   @override
   void initState() {
@@ -475,11 +474,6 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
         continue;
       }
 
-      if (job.state != DownloadJobState.readyToInstall) continue;
-      if (_installerOpenedForReleaseIds.contains(job.releaseId)) continue;
-
-      _installerOpenedForReleaseIds.add(job.releaseId);
-      unawaited(_openDownloadedInstaller(job.releaseId));
     }
   }
 
