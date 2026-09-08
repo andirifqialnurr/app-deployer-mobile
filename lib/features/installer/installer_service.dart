@@ -51,4 +51,12 @@ class InstallerService {
   Future<void> openInstallPermissionSettings() {
     return _channel.invokeMethod<void>('openInstallPermissionSettings');
   }
+
+  Future<bool> canPostNotifications() async {
+    return await _channel.invokeMethod<bool>('canPostNotifications') ?? false;
+  }
+
+  Future<void> requestPostNotifications() {
+    return _channel.invokeMethod<void>('requestPostNotifications');
+  }
 }

@@ -123,7 +123,7 @@
 - [x] Implement Android launch intent for `Open`.
 - [x] Implement `Intent.ACTION_DELETE` for `Uninstall`.
 - [x] Implement `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for `Open App Info`.
-- [ ] Review Android 13+ notification permission for custom download notifications.
+- [x] Review Android 13+ notification permission for custom download notifications.
 - [ ] Review foreground-service declarations if the native foreground downloader is used.
 - [x] Keep FileProvider authorities and APK paths package-scoped and secure.
 

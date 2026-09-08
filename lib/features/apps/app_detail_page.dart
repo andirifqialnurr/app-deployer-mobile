@@ -404,6 +404,10 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
   Future<void> _downloadAndOpenInstaller(AppRelease release) async {
     final messenger = ScaffoldMessenger.of(context);
     final installer = ref.read(installerServiceProvider);
+    if (!await installer.canPostNotifications()) {
+      await installer.requestPostNotifications();
+    }
+
     final canInstall = await installer.canRequestPackageInstalls();
 
     if (!mounted) return;
