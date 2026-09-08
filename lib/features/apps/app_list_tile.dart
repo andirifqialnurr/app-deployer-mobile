@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../downloads/download_controller.dart';
 import '../installer/installer_service.dart';
 import 'app_detail_page.dart';
 import 'install_status.dart';
@@ -21,7 +22,12 @@ class _AppListTileState extends ConsumerState<AppListTile> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_loadStatus);
+    Future.microtask(() async {
+      await _loadStatus();
+      await ref.read(downloadControllerProvider.notifier).restoreLatestDownload(
+            widget.app,
+          );
+    });
   }
 
   @override
@@ -56,6 +62,11 @@ class _AppListTileState extends ConsumerState<AppListTile> {
   Widget build(BuildContext context) {
     final app = widget.app;
     final release = app.latestRelease;
+    final downloadJob = release == null
+        ? null
+        : ref.watch(
+            downloadControllerProvider.select((jobs) => jobs[release.id]),
+          );
 
     return Card(
       child: ListTile(
@@ -69,6 +80,7 @@ class _AppListTileState extends ConsumerState<AppListTile> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _StatusChip(status: _status),
+            if (downloadJob != null) _DownloadStatusChip(job: downloadJob),
             const Icon(Icons.chevron_right),
           ],
         ),
@@ -82,6 +94,54 @@ class _AppListTileState extends ConsumerState<AppListTile> {
         },
       ),
     );
+  }
+}
+
+class _DownloadStatusChip extends StatelessWidget {
+  const _DownloadStatusChip({required this.job});
+
+  final DownloadJob job;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return switch (job.state) {
+      DownloadJobState.queued ||
+      DownloadJobState.running ||
+      DownloadJobState.paused ||
+      DownloadJobState.verifying ||
+      DownloadJobState.installing =>
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: job.progressPercent > 0 ? job.progressPercent / 100 : null,
+                strokeWidth: 3,
+              ),
+              Text(
+                '${job.progressPercent}%',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+          ),
+        ),
+      DownloadJobState.readyToInstall => Chip(
+          avatar: const Icon(Icons.done, size: 16),
+          label: const Text('Downloaded'),
+          side: BorderSide(color: colorScheme.primary),
+          visualDensity: VisualDensity.compact,
+        ),
+      DownloadJobState.failed => const Chip(
+          avatar: Icon(Icons.error_outline, size: 16),
+          label: Text('Failed'),
+          side: BorderSide(color: Colors.red),
+          visualDensity: VisualDensity.compact,
+        ),
+    };
   }
 }
 
