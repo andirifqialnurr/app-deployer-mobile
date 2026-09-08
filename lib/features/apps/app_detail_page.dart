@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,7 +33,10 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.microtask(_loadInstallStatus);
+    Future.microtask(() async {
+      await _loadInstallStatus();
+      await _restoreDownloadState();
+    });
   }
 
   @override
@@ -44,7 +49,86 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(appRevisionsProvider(widget.app.id));
-      Future.microtask(_loadInstallStatus);
+      unawaited(_loadInstallStatus());
+      unawaited(_restoreDownloadState());
+    }
+  }
+
+  Future<void> _restoreDownloadState() async {
+    if (_downloading) return;
+
+    final release = widget.app.latestRelease;
+    if (release == null) return;
+
+    final status = await ref
+        .read(downloadServiceProvider)
+        .findDownload(release.id);
+    if (!mounted || status == null) return;
+
+    final active = status.status == 'pending' ||
+        status.status == 'running' ||
+        status.status == 'paused';
+    if (!active) return;
+
+    final totalBytes = status.totalBytes > 0
+        ? status.totalBytes
+        : release.apkSizeBytes;
+    final progress = totalBytes > 0
+        ? ((status.receivedBytes / totalBytes) * 100).floor().clamp(0, 100)
+        : 0;
+
+    setState(() {
+      _downloading = true;
+      _activeReleaseId = release.id;
+      _progress = progress;
+      _receivedBytes = status.receivedBytes;
+      _totalBytes = totalBytes;
+    });
+
+    unawaited(_monitorExistingDownload(release));
+  }
+
+  Future<void> _monitorExistingDownload(AppRelease release) async {
+    try {
+      final result = await ref.read(downloadServiceProvider).downloadRelease(
+        release,
+        appName: widget.app.name,
+        onProgress: (progress) {
+          if (mounted) setState(() => _progress = progress);
+        },
+        onReceiveProgress: (receivedBytes, totalBytes) {
+          if (!mounted) return;
+          setState(() {
+            _receivedBytes = receivedBytes;
+            _totalBytes = totalBytes;
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.verified
+                ? 'Download ${release.versionName} selesai. '
+                    'Gunakan notifikasi untuk install.'
+                : 'Verifikasi APK gagal.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download gagal: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _activeReleaseId = null;
+        });
+      }
     }
   }
 
@@ -397,6 +481,7 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     try {
       result = await ref.read(downloadServiceProvider).downloadRelease(
         release,
+        appName: widget.app.name,
         onProgress: (progress) {
           if (mounted) setState(() => _progress = progress);
         },

@@ -22,6 +22,7 @@ class DownloadService {
 
   Future<DownloadResult> downloadRelease(
     AppRelease release, {
+    required String appName,
     void Function(int progress)? onProgress,
     void Function(int receivedBytes, int totalBytes)? onReceiveProgress,
   }) async {
@@ -69,8 +70,8 @@ class DownloadService {
         releaseId: release.id,
         url: nativeDownloadUrl,
         fileName: '${release.id}-${release.versionCode}.apk',
-        title: '${release.versionName} APK',
-        description: 'Downloading APK',
+        title: '$appName ${release.versionName}',
+        description: 'Downloading version ${release.versionCode}',
         headers: nativeHeaders,
         onProgress: handleProgress,
       );
@@ -121,6 +122,10 @@ class DownloadService {
       expectedSha256: expectedSha256,
       actualSha256: actualSha256,
     );
+  }
+
+  Future<NativeDownloadStatus?> findDownload(String releaseId) {
+    return _nativeDownloadManager.findDownload(releaseId);
   }
 }
 

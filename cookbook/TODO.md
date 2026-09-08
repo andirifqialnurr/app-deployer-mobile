@@ -55,7 +55,7 @@
 - [x] Add `INTERNET` permission to the release manifest.
 - [x] Expose received bytes and total bytes instead of passing percentage only.
 - [x] Show a real progress bar, downloaded size, total size, and transfer status.
-- [ ] Prevent duplicate downloads for the same release.
+- [x] Prevent duplicate downloads for the same release.
 - [ ] Add a visible cancel button for the current foreground Dio download.
 - [ ] Add a visible pause button for the current foreground Dio download, implemented as cancel plus resumable restart only after backend range support exists.
 - [x] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
@@ -69,7 +69,9 @@
 
 - [x] Move APK downloads to Android `DownloadManager`.
 - [x] Request the Android system download notification with real progress.
+- [x] Include the app name, version name, and version code in the system download notification.
 - [x] Poll `DownloadManager.Query` and sync native status back to Flutter.
+- [x] Restore an active download and byte progress after the app resumes.
 - [ ] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
 - [x] Verify SHA-256 after `DownloadManager` reports success.
 - [x] Auto-open the Android package installer from the completion flow when the app is in foreground.
@@ -78,6 +80,7 @@
 - [x] Prevent duplicate `DownloadManager` jobs for the same release.
 - [ ] Safely remove cancelled or failed download jobs.
 - [x] Persist native download job ids so status survives app restart.
+- [ ] Add a custom completion notification/check icon if the system DownloadManager notification is not sufficient.
 
 ### Phase 7C: Native Foreground Downloader and True Pause/Resume
 

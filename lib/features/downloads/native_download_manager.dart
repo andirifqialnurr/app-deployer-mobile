@@ -77,6 +77,7 @@ class NativeDownloadManager {
 
     var lastReceivedBytes = 0;
     var lastProgressAt = DateTime.now();
+    var removeAfterError = false;
 
     try {
       while (true) {
@@ -99,8 +100,10 @@ class NativeDownloadManager {
         if (receivedBytes > lastReceivedBytes) {
           lastReceivedBytes = receivedBytes;
           lastProgressAt = DateTime.now();
-        } else if (DateTime.now().difference(lastProgressAt) >
+        } else if (status == 'running' &&
+            DateTime.now().difference(lastProgressAt) >
             const Duration(seconds: 45)) {
+          removeAfterError = true;
           throw NativeDownloadException(
             'Android download stalled at $receivedBytes bytes.',
           );
@@ -121,6 +124,7 @@ class NativeDownloadManager {
         }
 
         if (status == 'failed') {
+          removeAfterError = true;
           final reason = rawStatus['reason'];
           throw NativeDownloadException(
             'Android download failed${reason == null ? '.' : ' (reason $reason).'}',
@@ -128,7 +132,9 @@ class NativeDownloadManager {
         }
       }
     } catch (_) {
-      await removeDownload(downloadId);
+      if (removeAfterError) {
+        await removeDownload(downloadId);
+      }
       rethrow;
     }
   }
@@ -149,7 +155,6 @@ class NativeDownloadManager {
     if (rawStatus == null) return null;
     return NativeDownloadStatus.fromMap(rawStatus);
   }
-
 }
 
 int _asInt(Object? value) {
