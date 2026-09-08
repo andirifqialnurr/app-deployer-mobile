@@ -16,7 +16,7 @@ import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val downloadPreferences by lazy {
-        getSharedPreferences("app_deployer_downloads", Context.MODE_PRIVATE)
+        getSharedPreferences(DOWNLOAD_PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
     private val downloadManager by lazy {
@@ -93,6 +93,8 @@ class MainActivity : FlutterActivity() {
                     val fileName = call.argument<String>("fileName")
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
+                    val versionName = call.argument<String>("versionName")
+                    val versionCode = call.argument<Number>("versionCode")?.toLong()
                     val headers = call.argument<Map<*, *>>("headers") ?: emptyMap<Any, Any>()
                     if (releaseId.isNullOrBlank() || url.isNullOrBlank() || fileName.isNullOrBlank()) {
                         result.error(
@@ -109,6 +111,8 @@ class MainActivity : FlutterActivity() {
                             fileName = fileName,
                             title = title,
                             description = description,
+                            versionName = versionName,
+                            versionCode = versionCode,
                             headers = headers,
                         )
                     )
@@ -151,6 +155,8 @@ class MainActivity : FlutterActivity() {
         fileName: String,
         title: String?,
         description: String?,
+        versionName: String?,
+        versionCode: Long?,
         headers: Map<*, *>,
     ): Long {
         val existingDownloadId = downloadPreferences.getLong(downloadKey(releaseId), -1L)
@@ -185,6 +191,12 @@ class MainActivity : FlutterActivity() {
         val downloadId = downloadManager.enqueue(request)
         downloadPreferences.edit()
             .putLong(downloadKey(releaseId), downloadId)
+            .putString(downloadReleaseIdKey(downloadId), releaseId)
+            .putString(downloadTitleKey(downloadId), title ?: "APK download")
+            .putString(
+                downloadVersionKey(downloadId),
+                listOfNotNull(versionName, versionCode?.toString()).joinToString(" "),
+            )
             .apply()
         return downloadId
     }
@@ -233,12 +245,12 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun downloadKey(releaseId: String): String = "release:$releaseId"
-
     private fun clearDownloadById(downloadId: Long) {
         val editor = downloadPreferences.edit()
         downloadPreferences.all.forEach { (key, value) ->
-            if (value is Long && value == downloadId) {
+            if ((value is Long && value == downloadId) ||
+                key.startsWith("download:$downloadId:")
+            ) {
                 editor.remove(key)
             }
         }

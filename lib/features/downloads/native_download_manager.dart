@@ -59,6 +59,8 @@ class NativeDownloadManager {
     required String fileName,
     required String title,
     required String description,
+    required String versionName,
+    required int versionCode,
     Map<String, String> headers = const {},
     required void Function(int receivedBytes, int totalBytes) onProgress,
   }) async {
@@ -68,6 +70,8 @@ class NativeDownloadManager {
       'fileName': fileName,
       'title': title,
       'description': description,
+      'versionName': versionName,
+      'versionCode': versionCode,
       'headers': headers,
     });
 

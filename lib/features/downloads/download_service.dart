@@ -72,6 +72,8 @@ class DownloadService {
         fileName: '${release.id}-${release.versionCode}.apk',
         title: '$appName ${release.versionName}',
         description: 'Downloading version ${release.versionCode}',
+        versionName: release.versionName,
+        versionCode: release.versionCode,
         headers: nativeHeaders,
         onProgress: handleProgress,
       );
