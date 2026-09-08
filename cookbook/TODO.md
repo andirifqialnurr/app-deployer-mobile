@@ -72,15 +72,15 @@
 - [x] Include the app name, version name, and version code in the system download notification.
 - [x] Poll `DownloadManager.Query` and sync native status back to Flutter.
 - [x] Restore an active download and byte progress after the app resumes.
-- [ ] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
+- [x] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
 - [x] Verify SHA-256 after `DownloadManager` reports success.
 - [x] Auto-open the Android package installer from the completion flow when the app is in foreground.
-- [ ] Show a notification or in-app action to install when completion happens while the app is backgrounded.
-- [ ] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
+- [x] Show a notification or in-app action to install when completion happens while the app is backgrounded.
+- [x] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
 - [x] Prevent duplicate `DownloadManager` jobs for the same release.
 - [x] Safely remove cancelled or failed download jobs.
 - [x] Persist native download job ids so status survives app restart.
-- [ ] Add a custom completion notification/check icon if the system DownloadManager notification is not sufficient.
+- [x] Add a custom completion notification/check icon if the system DownloadManager notification is not sufficient.
 
 ### Phase 7C: Native Foreground Downloader and True Pause/Resume
 
