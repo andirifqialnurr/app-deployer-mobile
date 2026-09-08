@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../downloads/download_service.dart';
-import '../downloads/download_result.dart';
+import '../downloads/download_controller.dart';
 import '../installer/installer_service.dart';
 import 'apps_repository.dart';
 import 'install_status.dart';
@@ -23,11 +22,7 @@ class AppDetailPage extends ConsumerStatefulWidget {
 class _AppDetailPageState extends ConsumerState<AppDetailPage>
     with WidgetsBindingObserver {
   InstallStatus _status = const InstallStatus(state: InstallState.checking);
-  bool _downloading = false;
-  int _progress = 0;
-  int _receivedBytes = 0;
-  int _totalBytes = 0;
-  String? _activeReleaseId;
+  final Set<String> _installerOpenedForReleaseIds = <String>{};
 
   @override
   void initState() {
@@ -55,81 +50,9 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
   }
 
   Future<void> _restoreDownloadState() async {
-    if (_downloading) return;
-
-    final release = widget.app.latestRelease;
-    if (release == null) return;
-
-    final status = await ref
-        .read(downloadServiceProvider)
-        .findDownload(release.id);
-    if (!mounted || status == null) return;
-
-    final active = status.status == 'pending' ||
-        status.status == 'running' ||
-        status.status == 'paused';
-    if (!active) return;
-
-    final totalBytes = status.totalBytes > 0
-        ? status.totalBytes
-        : release.apkSizeBytes;
-    final progress = totalBytes > 0
-        ? ((status.receivedBytes / totalBytes) * 100).floor().clamp(0, 100)
-        : 0;
-
-    setState(() {
-      _downloading = true;
-      _activeReleaseId = release.id;
-      _progress = progress;
-      _receivedBytes = status.receivedBytes;
-      _totalBytes = totalBytes;
-    });
-
-    unawaited(_monitorExistingDownload(release));
-  }
-
-  Future<void> _monitorExistingDownload(AppRelease release) async {
-    try {
-      final result = await ref.read(downloadServiceProvider).downloadRelease(
-        release,
-        appName: widget.app.name,
-        onProgress: (progress) {
-          if (mounted) setState(() => _progress = progress);
-        },
-        onReceiveProgress: (receivedBytes, totalBytes) {
-          if (!mounted) return;
-          setState(() {
-            _receivedBytes = receivedBytes;
-            _totalBytes = totalBytes;
-          });
-        },
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.verified
-                ? 'Download ${release.versionName} selesai. '
-                    'Gunakan notifikasi untuk install.'
-                : 'Verifikasi APK gagal.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download gagal: $error')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _downloading = false;
-          _activeReleaseId = null;
-        });
-      }
-    }
+    await ref.read(downloadControllerProvider.notifier).restoreLatestDownload(
+          widget.app,
+        );
   }
 
   Future<void> _loadInstallStatus() async {
@@ -153,6 +76,8 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     final app = widget.app;
     final release = app.latestRelease;
     final revisionsAsync = ref.watch(appRevisionsProvider(app.id));
+
+    ref.listen(downloadControllerProvider, _handleDownloadJobs);
 
     return Scaffold(
       appBar: AppBar(title: Text(app.name)),
@@ -181,6 +106,11 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     AppRelease? release,
   ) {
     final textTheme = Theme.of(context).textTheme;
+    final job = release == null
+        ? null
+        : ref.watch(
+            downloadControllerProvider.select((jobs) => jobs[release.id]),
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,24 +176,27 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
           ),
         ],
         const SizedBox(height: 16),
-        _buildPrimaryButtons(release),
-        if (_downloading) ...[
+        _buildPrimaryButtons(release, job),
+        if (job?.isActive == true || job?.state == DownloadJobState.readyToInstall) ...[
           const SizedBox(height: 16),
           LinearProgressIndicator(
-            value: _progress > 0 ? _progress / 100 : null,
+            value: job!.progressPercent > 0 ? job.progressPercent / 100 : null,
           ),
           const SizedBox(height: 8),
-          Text(_downloadStatusText),
+          Text(_downloadStatusText(job)),
         ],
       ],
     );
   }
 
-  Widget _buildPrimaryButtons(AppRelease? release) {
+  Widget _buildPrimaryButtons(AppRelease? release, DownloadJob? job) {
     final installed = _status.installedVersionCode != null;
+    final hasActiveJob = job?.isActive == true;
     final canDownload = release != null &&
         _status.state != InstallState.downgradeBlocked &&
-        !_downloading;
+        !hasActiveJob;
+    final readyToInstall = job?.state == DownloadJobState.readyToInstall &&
+        job?.filePath != null;
 
     return Column(
       children: [
@@ -272,10 +205,14 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
             Expanded(
               child: FilledButton.icon(
                 icon: Icon(installed ? Icons.open_in_new : Icons.download),
-                label: Text(installed ? 'Open' : _downloadButtonLabel(release)),
+                label: Text(
+                  installed ? 'Open' : _downloadButtonLabel(release, job),
+                ),
                 onPressed: installed
                     ? _openInstalledApp
-                    : canDownload
+                    : readyToInstall
+                        ? () => _openDownloadedInstaller(release!.id)
+                        : canDownload
                         ? () => _downloadAndOpenInstaller(release)
                         : null,
               ),
@@ -298,8 +235,12 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
             width: double.infinity,
             child: FilledButton.icon(
               icon: const Icon(Icons.system_update_alt),
-              label: Text(_downloadButtonLabel(release)),
-              onPressed: canDownload ? () => _downloadAndOpenInstaller(release) : null,
+              label: Text(_downloadButtonLabel(release, job)),
+              onPressed: readyToInstall
+                  ? () => _openDownloadedInstaller(release.id)
+                  : canDownload
+                      ? () => _downloadAndOpenInstaller(release)
+                      : null,
             ),
           ),
         ],
@@ -366,13 +307,18 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     }
 
     return releases.map((release) {
+      final job = ref.watch(
+        downloadControllerProvider.select((jobs) => jobs[release.id]),
+      );
       final installedCode = _status.installedVersionCode;
       final isInstalled = installedCode == release.versionCode;
       final isLatest = widget.app.latestRelease?.id == release.id;
       final isDowngrade = installedCode != null &&
           release.versionCode < installedCode &&
           !isInstalled;
-      final isActiveDownload = _activeReleaseId == release.id && _downloading;
+      final isActiveDownload = job?.isActive == true;
+      final readyToInstall = job?.state == DownloadJobState.readyToInstall &&
+          job?.filePath != null;
       final badges = [
         if (isLatest) 'Latest',
         if (isInstalled) 'Installed',
@@ -403,18 +349,30 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
           ],
         ),
         trailing: TextButton(
-          onPressed: isInstalled || isDowngrade || _downloading
+          onPressed: isInstalled || isDowngrade || isActiveDownload
               ? null
-              : () => _downloadAndOpenInstaller(release),
-          child: Text(isActiveDownload ? '$_progress%' : 'Install'),
+              : readyToInstall
+                  ? () => _openDownloadedInstaller(release.id)
+                  : () => _downloadAndOpenInstaller(release),
+          child: Text(
+            isActiveDownload
+                ? '${job!.progressPercent}%'
+                : readyToInstall
+                    ? 'Install'
+                    : 'Download',
+          ),
         ),
       );
     }).toList(growable: false);
   }
 
-  String _downloadButtonLabel(AppRelease? release) {
-    if (_downloading && release != null && _activeReleaseId == release.id) {
-      return 'Downloading $_progress%';
+  String _downloadButtonLabel(AppRelease? release, DownloadJob? job) {
+    if (release != null && job?.isActive == true) {
+      return 'Downloading ${job!.progressPercent}%';
+    }
+
+    if (job?.state == DownloadJobState.readyToInstall) {
+      return 'Install';
     }
 
     return switch (_status.state) {
@@ -426,13 +384,21 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     };
   }
 
-  String get _downloadStatusText {
-    final total = _totalBytes;
+  String _downloadStatusText(DownloadJob job) {
+    if (job.state == DownloadJobState.readyToInstall) {
+      return 'Download complete. Ready to install.';
+    }
+
+    if (job.state == DownloadJobState.verifying) {
+      return 'Verifying APK...';
+    }
+
+    final total = job.totalBytes;
     if (total <= 0) {
       return 'Downloading...';
     }
 
-    return 'Downloading ${_formatBytes(_receivedBytes)} of ${_formatBytes(total)}';
+    return 'Downloading ${_formatBytes(job.receivedBytes)} of ${_formatBytes(total)}';
   }
 
   Future<void> _downloadAndOpenInstaller(AppRelease release) async {
@@ -450,74 +416,45 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
       return;
     }
 
-    setState(() {
-      _downloading = true;
-      _activeReleaseId = release.id;
-      _progress = 0;
-      _receivedBytes = 0;
-      _totalBytes = 0;
-    });
-
-    DownloadResult result;
-    try {
-      result = await ref.read(downloadServiceProvider).downloadRelease(
-        release,
-        appName: widget.app.name,
-        onProgress: (progress) {
-          if (mounted) setState(() => _progress = progress);
-        },
-        onReceiveProgress: (receivedBytes, totalBytes) {
-          if (!mounted) return;
-          setState(() {
-            _receivedBytes = receivedBytes;
-            _totalBytes = totalBytes;
-          });
-        },
-      );
-    } catch (error) {
-      if (!mounted) return;
-
-      messenger.showSnackBar(
-        SnackBar(content: Text('Download gagal: $error')),
-      );
-      return;
-    }
-
-    try {
-      if (!mounted) return;
-
-      if (!result.verified) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Verifikasi APK gagal.')),
+    await ref.read(downloadControllerProvider.notifier).startDownload(
+          widget.app,
+          release,
         );
-        return;
+  }
+
+  Future<void> _openDownloadedInstaller(String releaseId) async {
+    final opened = await ref
+        .read(downloadControllerProvider.notifier)
+        .openInstaller(releaseId);
+    if (!mounted || opened) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Installer Android tidak bisa dibuka.')),
+    );
+  }
+
+  void _handleDownloadJobs(
+    Map<String, DownloadJob>? previous,
+    Map<String, DownloadJob> next,
+  ) {
+    for (final job in next.values) {
+      if (job.appId != widget.app.id) continue;
+
+      final previousJob = previous?[job.releaseId];
+      if (previousJob?.state == job.state) continue;
+
+      if (job.state == DownloadJobState.failed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download gagal: ${job.errorMessage}')),
+        );
+        continue;
       }
 
-      final opened = await installer.openApkInstaller(result.file.path);
-      if (!mounted) return;
+      if (job.state != DownloadJobState.readyToInstall) continue;
+      if (_installerOpenedForReleaseIds.contains(job.releaseId)) continue;
 
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            opened
-                ? 'Installer Android dibuka.'
-                : 'APK selesai diunduh, tapi installer Android tidak bisa dibuka.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-
-      messenger.showSnackBar(
-        SnackBar(content: Text('Installer gagal dibuka: $error')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _downloading = false;
-          _activeReleaseId = null;
-        });
-      }
+      _installerOpenedForReleaseIds.add(job.releaseId);
+      unawaited(_openDownloadedInstaller(job.releaseId));
     }
   }
 
