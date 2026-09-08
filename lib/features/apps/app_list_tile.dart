@@ -45,21 +45,10 @@ class _AppListTileState extends ConsumerState<AppListTile> {
     if (!mounted) return;
 
     setState(() {
-      if (installedVersion == null) {
-        _status = const InstallStatus(state: InstallState.notInstalled);
-      } else if (release == null || installedVersion == release.versionCode) {
-        _status = InstallStatus(
-          state: InstallState.installed,
-          installedVersionCode: installedVersion,
-        );
-      } else {
-        _status = InstallStatus(
-          state: installedVersion < release.versionCode
-              ? InstallState.updateAvailable
-              : InstallState.downgradeBlocked,
-          installedVersionCode: installedVersion,
-        );
-      }
+      _status = resolveInstallStatus(
+        installedVersionCode: installedVersion,
+        latestRelease: release,
+      );
     });
   }
 
@@ -83,12 +72,13 @@ class _AppListTileState extends ConsumerState<AppListTile> {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => AppDetailPage(app: app),
             ),
           );
+          await _loadStatus();
         },
       ),
     );

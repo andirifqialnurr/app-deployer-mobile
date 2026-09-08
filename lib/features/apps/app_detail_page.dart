@@ -140,29 +140,10 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
 
     if (!mounted) return;
 
-    if (installedVersion == null) {
-      setState(() {
-        _status = const InstallStatus(state: InstallState.notInstalled);
-      });
-      return;
-    }
-
-    if (release == null || installedVersion == release.versionCode) {
-      setState(() {
-        _status = InstallStatus(
-          state: InstallState.installed,
-          installedVersionCode: installedVersion,
-        );
-      });
-      return;
-    }
-
     setState(() {
-      _status = InstallStatus(
-        state: installedVersion < release.versionCode
-            ? InstallState.updateAvailable
-            : InstallState.downgradeBlocked,
+      _status = resolveInstallStatus(
         installedVersionCode: installedVersion,
+        latestRelease: release,
       );
     });
   }
