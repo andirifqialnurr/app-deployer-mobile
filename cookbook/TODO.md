@@ -86,7 +86,7 @@
 
 - [ ] Add a native foreground download service only if `DownloadManager` is not enough.
 - [ ] Add notification channel and foreground-service notification actions for pause, resume, cancel, and install.
-- [ ] Add Android 13+ notification permission request if custom notifications require it.
+- [x] Add Android 13+ notification permission request if custom notifications require it.
 - [ ] Add foreground service declarations and review Android version-specific restrictions.
 - [ ] Resume interrupted APK downloads using HTTP `Range` and persisted partial files.
 - [ ] Validate resumed files by final SHA-256 before opening installer.
