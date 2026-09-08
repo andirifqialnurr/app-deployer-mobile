@@ -56,7 +56,7 @@
 - [x] Expose received bytes and total bytes instead of passing percentage only.
 - [x] Show a real progress bar, downloaded size, total size, and transfer status.
 - [x] Prevent duplicate downloads for the same release.
-- [ ] Add a visible cancel button for the current foreground Dio download.
+- [x] Add a visible cancel button for the current foreground Dio download.
 - [ ] Add a visible pause button for the current foreground Dio download, implemented as cancel plus resumable restart only after backend range support exists.
 - [x] Auto-open the Android package installer immediately after download and SHA-256 verification complete.
 - [x] Show a clear error when Android package installer cannot be opened.
@@ -78,7 +78,7 @@
 - [ ] Show a notification or in-app action to install when completion happens while the app is backgrounded.
 - [ ] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
 - [x] Prevent duplicate `DownloadManager` jobs for the same release.
-- [ ] Safely remove cancelled or failed download jobs.
+- [x] Safely remove cancelled or failed download jobs.
 - [x] Persist native download job ids so status survives app restart.
 - [ ] Add a custom completion notification/check icon if the system DownloadManager notification is not sufficient.
 

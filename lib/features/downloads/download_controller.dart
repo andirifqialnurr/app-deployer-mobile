@@ -23,6 +23,7 @@ enum DownloadJobState {
   verifying,
   readyToInstall,
   installing,
+  cancelled,
   failed,
 }
 
@@ -67,7 +68,10 @@ class DownloadJob {
       DownloadJobState.verifying ||
       DownloadJobState.installing =>
         true,
-      DownloadJobState.readyToInstall || DownloadJobState.failed => false,
+      DownloadJobState.readyToInstall ||
+      DownloadJobState.cancelled ||
+      DownloadJobState.failed =>
+        false,
     };
   }
 
@@ -102,6 +106,7 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
   final DownloadService _downloadService;
   final InstallerService _installerService;
   final Set<String> _activeReleaseIds = <String>{};
+  final Set<String> _cancelledReleaseIds = <String>{};
 
   DownloadJob? jobForRelease(String releaseId) => state[releaseId];
 
@@ -126,6 +131,7 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
       totalBytes: release.apkSizeBytes,
     );
     _setJob(job);
+    _cancelledReleaseIds.remove(release.id);
     _activeReleaseIds.add(release.id);
 
     try {
@@ -169,15 +175,32 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
       );
     } catch (error) {
       final current = state[release.id] ?? job;
+      final cancelled = _cancelledReleaseIds.contains(release.id);
       _setJob(
         current.copyWith(
-          state: DownloadJobState.failed,
-          errorMessage: '$error',
+          state: cancelled ? DownloadJobState.cancelled : DownloadJobState.failed,
+          errorMessage: cancelled ? 'Download cancelled.' : '$error',
         ),
       );
     } finally {
       _activeReleaseIds.remove(release.id);
+      _cancelledReleaseIds.remove(release.id);
     }
+  }
+
+  Future<void> cancelDownload(String releaseId) async {
+    _cancelledReleaseIds.add(releaseId);
+    await _downloadService.cancelRelease(releaseId);
+
+    final job = state[releaseId];
+    if (job == null) return;
+
+    _setJob(
+      job.copyWith(
+        state: DownloadJobState.cancelled,
+        errorMessage: 'Download cancelled.',
+      ),
+    );
   }
 
   Future<bool> openInstaller(String releaseId) async {

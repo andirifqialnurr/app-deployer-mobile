@@ -53,6 +53,10 @@ class _DownloadIcon extends StatelessWidget {
       return const Icon(Icons.download_done);
     }
 
+    if (job.state == DownloadJobState.cancelled) {
+      return const Icon(Icons.cancel_outlined);
+    }
+
     if (job.state == DownloadJobState.failed) {
       return const Icon(Icons.error_outline, color: Colors.red);
     }
@@ -91,7 +95,18 @@ class _DownloadAction extends ConsumerWidget {
       );
     }
 
-    if (job.state == DownloadJobState.failed) {
+    if (job.isActive) {
+      return IconButton(
+        tooltip: 'Cancel download',
+        onPressed: () {
+          ref.read(downloadControllerProvider.notifier).cancelDownload(job.releaseId);
+        },
+        icon: const Icon(Icons.close),
+      );
+    }
+
+    if (job.state == DownloadJobState.failed ||
+        job.state == DownloadJobState.cancelled) {
       return IconButton(
         tooltip: 'Clear',
         onPressed: () {
@@ -113,6 +128,7 @@ String _jobLabel(DownloadJob job) {
     DownloadJobState.verifying => 'Verifying',
     DownloadJobState.readyToInstall => 'Ready to install',
     DownloadJobState.installing => 'Opening installer',
+    DownloadJobState.cancelled => 'Cancelled',
     DownloadJobState.failed => job.errorMessage ?? 'Failed',
   };
 }

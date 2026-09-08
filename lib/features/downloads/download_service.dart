@@ -129,6 +129,10 @@ class DownloadService {
   Future<NativeDownloadStatus?> findDownload(String releaseId) {
     return _nativeDownloadManager.findDownload(releaseId);
   }
+
+  Future<bool> cancelRelease(String releaseId) {
+    return _nativeDownloadManager.cancelRelease(releaseId);
+  }
 }
 
 String _resolveUrl(String value, String baseUrl) {

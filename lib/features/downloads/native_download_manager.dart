@@ -151,6 +151,12 @@ class NativeDownloadManager {
         false;
   }
 
+  Future<bool> cancelRelease(String releaseId) async {
+    final status = await findDownload(releaseId);
+    if (status == null) return false;
+    return removeDownload(status.downloadId);
+  }
+
   Future<NativeDownloadStatus?> findDownload(String releaseId) async {
     final rawStatus = await _channel.invokeMethod<Map<dynamic, dynamic>?>(
       'findDownload',

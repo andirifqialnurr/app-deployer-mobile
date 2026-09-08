@@ -135,6 +135,12 @@ class _DownloadStatusChip extends StatelessWidget {
           side: BorderSide(color: colorScheme.primary),
           visualDensity: VisualDensity.compact,
         ),
+      DownloadJobState.cancelled => Chip(
+          avatar: const Icon(Icons.cancel_outlined, size: 16),
+          label: const Text('Cancelled'),
+          side: BorderSide(color: colorScheme.outline),
+          visualDensity: VisualDensity.compact,
+        ),
       DownloadJobState.failed => const Chip(
           avatar: Icon(Icons.error_outline, size: 16),
           label: Text('Failed'),

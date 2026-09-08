@@ -184,6 +184,19 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
           ),
           const SizedBox(height: 8),
           Text(_downloadStatusText(job)),
+          if (job.isActive) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => ref
+                    .read(downloadControllerProvider.notifier)
+                    .cancelDownload(job.releaseId),
+                icon: const Icon(Icons.close),
+                label: const Text('Cancel download'),
+              ),
+            ),
+          ],
         ],
       ],
     );
@@ -391,6 +404,14 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
 
     if (job.state == DownloadJobState.verifying) {
       return 'Verifying APK...';
+    }
+
+    if (job.state == DownloadJobState.cancelled) {
+      return 'Download cancelled.';
+    }
+
+    if (job.state == DownloadJobState.failed) {
+      return job.errorMessage ?? 'Download failed.';
     }
 
     final total = job.totalBytes;
