@@ -66,6 +66,7 @@ class DownloadService {
 
     try {
       final nativeResult = await _nativeDownloadManager.downloadApk(
+        releaseId: release.id,
         url: nativeDownloadUrl,
         fileName: '${release.id}-${release.versionCode}.apk',
         title: '${release.versionName} APK',

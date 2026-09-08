@@ -19,12 +19,42 @@ class NativeDownloadResult {
   final String filePath;
 }
 
+class NativeDownloadStatus {
+  const NativeDownloadStatus({
+    required this.downloadId,
+    required this.status,
+    required this.receivedBytes,
+    required this.totalBytes,
+    required this.reason,
+    this.filePath,
+  });
+
+  final int downloadId;
+  final String status;
+  final int receivedBytes;
+  final int totalBytes;
+  final int reason;
+  final String? filePath;
+
+  factory NativeDownloadStatus.fromMap(Map<dynamic, dynamic> raw) {
+    return NativeDownloadStatus(
+      downloadId: _asInt(raw['downloadId']),
+      status: raw['status'] as String? ?? 'unknown',
+      receivedBytes: _asInt(raw['receivedBytes']),
+      totalBytes: _asInt(raw['totalBytes']),
+      reason: _asInt(raw['reason']),
+      filePath: raw['filePath'] as String?,
+    );
+  }
+}
+
 class NativeDownloadManager {
   const NativeDownloadManager();
 
   static const _channel = MethodChannel('app_deployer/download_manager');
 
   Future<NativeDownloadResult> downloadApk({
+    required String releaseId,
     required String url,
     required String fileName,
     required String title,
@@ -33,6 +63,7 @@ class NativeDownloadManager {
     required void Function(int receivedBytes, int totalBytes) onProgress,
   }) async {
     final downloadId = await _channel.invokeMethod<int>('enqueueApkDownload', {
+      'releaseId': releaseId,
       'url': url,
       'fileName': fileName,
       'title': title,
@@ -110,9 +141,19 @@ class NativeDownloadManager {
         false;
   }
 
-  static int _asInt(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return 0;
+  Future<NativeDownloadStatus?> findDownload(String releaseId) async {
+    final rawStatus = await _channel.invokeMethod<Map<dynamic, dynamic>?>(
+      'findDownload',
+      {'releaseId': releaseId},
+    );
+    if (rawStatus == null) return null;
+    return NativeDownloadStatus.fromMap(rawStatus);
   }
+
+}
+
+int _asInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return 0;
 }

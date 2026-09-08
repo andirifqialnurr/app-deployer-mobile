@@ -15,6 +15,10 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
+    private val downloadPreferences by lazy {
+        getSharedPreferences("app_deployer_downloads", Context.MODE_PRIVATE)
+    }
+
     private val downloadManager by lazy {
         getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
@@ -84,17 +88,23 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enqueueApkDownload" -> {
+                    val releaseId = call.argument<String>("releaseId")
                     val url = call.argument<String>("url")
                     val fileName = call.argument<String>("fileName")
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
                     val headers = call.argument<Map<*, *>>("headers") ?: emptyMap<Any, Any>()
-                    if (url.isNullOrBlank() || fileName.isNullOrBlank()) {
-                        result.error("INVALID_DOWNLOAD", "url and fileName are required", null)
+                    if (releaseId.isNullOrBlank() || url.isNullOrBlank() || fileName.isNullOrBlank()) {
+                        result.error(
+                            "INVALID_DOWNLOAD",
+                            "releaseId, url, and fileName are required",
+                            null,
+                        )
                         return@setMethodCallHandler
                     }
                     result.success(
                         enqueueApkDownload(
+                            releaseId = releaseId,
                             url = url,
                             fileName = fileName,
                             title = title,
@@ -117,7 +127,17 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_DOWNLOAD", "downloadId is required", null)
                         return@setMethodCallHandler
                     }
-                    result.success(downloadManager.remove(downloadId) > 0)
+                    val removed = downloadManager.remove(downloadId) > 0
+                    clearDownloadById(downloadId)
+                    result.success(removed)
+                }
+                "findDownload" -> {
+                    val releaseId = call.argument<String>("releaseId")
+                    if (releaseId.isNullOrBlank()) {
+                        result.error("INVALID_DOWNLOAD", "releaseId is required", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(findDownload(releaseId))
                 }
                 else -> result.notImplemented()
             }
@@ -126,12 +146,22 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun enqueueApkDownload(
+        releaseId: String,
         url: String,
         fileName: String,
         title: String?,
         description: String?,
         headers: Map<*, *>,
     ): Long {
+        val existingDownloadId = downloadPreferences.getLong(downloadKey(releaseId), -1L)
+        if (existingDownloadId >= 0) {
+            val existingStatus = queryDownload(existingDownloadId)
+            if (existingStatus != null && existingStatus["status"] != "failed") {
+                return existingDownloadId
+            }
+            clearDownloadById(existingDownloadId)
+        }
+
         val request = DownloadManager.Request(Uri.parse(url)).apply {
             setTitle(title ?: "APK download")
             setDescription(description ?: "Downloading APK")
@@ -152,7 +182,22 @@ class MainActivity : FlutterActivity() {
                 fileName,
             )
         }
-        return downloadManager.enqueue(request)
+        val downloadId = downloadManager.enqueue(request)
+        downloadPreferences.edit()
+            .putLong(downloadKey(releaseId), downloadId)
+            .apply()
+        return downloadId
+    }
+
+    private fun findDownload(releaseId: String): Map<String, Any?>? {
+        val downloadId = downloadPreferences.getLong(downloadKey(releaseId), -1L)
+        if (downloadId < 0) return null
+
+        val status = queryDownload(downloadId)
+        if (status == null) {
+            clearDownloadById(downloadId)
+        }
+        return status
     }
 
     private fun queryDownload(downloadId: Long): Map<String, Any?>? {
@@ -177,6 +222,7 @@ class MainActivity : FlutterActivity() {
             )
 
             return mapOf(
+                "downloadId" to downloadId,
                 "status" to downloadStatus(status),
                 "reason" to reason,
                 "receivedBytes" to receivedBytes,
@@ -185,6 +231,18 @@ class MainActivity : FlutterActivity() {
                 "filePath" to localUri?.let { Uri.parse(it).path },
             )
         }
+    }
+
+    private fun downloadKey(releaseId: String): String = "release:$releaseId"
+
+    private fun clearDownloadById(downloadId: Long) {
+        val editor = downloadPreferences.edit()
+        downloadPreferences.all.forEach { (key, value) ->
+            if (value is Long && value == downloadId) {
+                editor.remove(key)
+            }
+        }
+        editor.apply()
     }
 
     private fun downloadStatus(status: Int): String {

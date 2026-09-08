@@ -75,9 +75,9 @@
 - [x] Auto-open the Android package installer from the completion flow when the app is in foreground.
 - [ ] Show a notification or in-app action to install when completion happens while the app is backgrounded.
 - [ ] Support queued, running, paused-by-system, successful, failed, cancelled, verifying, ready-to-install, and installing states.
-- [ ] Prevent duplicate `DownloadManager` jobs for the same release.
+- [x] Prevent duplicate `DownloadManager` jobs for the same release.
 - [ ] Safely remove cancelled or failed download jobs.
-- [ ] Persist native download job ids so status survives app restart.
+- [x] Persist native download job ids so status survives app restart.
 
 ### Phase 7C: Native Foreground Downloader and True Pause/Resume
 
