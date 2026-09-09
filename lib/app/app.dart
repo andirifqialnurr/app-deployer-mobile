@@ -36,12 +36,6 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   int _index = 0;
   final Set<String> _installerOpenedForReleaseIds = <String>{};
 
-  static const _pages = [
-    AppsPage(),
-    DownloadsPage(),
-    SettingsPage(),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -69,7 +63,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     ref.listen(downloadControllerProvider, _handleDownloadJobs);
 
     return Scaffold(
-      body: _pages[_index],
+      body: _buildPage(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (index) => setState(() => _index = index),
@@ -94,6 +88,14 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     );
   }
 
+  Widget _buildPage() {
+    return switch (_index) {
+      0 => const AppsPage(),
+      1 => DownloadsPage(onOpenApp: _openAppDetail),
+      _ => const SettingsPage(),
+    };
+  }
+
   Future<void> _openPendingDownloadLaunch() async {
     final launch = await ref
         .read(downloadControllerProvider.notifier)
@@ -111,7 +113,18 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   }
 
   Future<void> _openAppDetail(String? appId, String releaseId) async {
-    final apps = await ref.read(appsProvider.future);
+    final apps = await (() async {
+      try {
+        return await ref.read(appsProvider.future);
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal membuka detail app: $error')),
+          );
+        }
+        return const [];
+      }
+    })();
     if (!mounted) return;
 
     final matchingApps = apps.where((app) {

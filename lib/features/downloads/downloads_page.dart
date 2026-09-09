@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'download_controller.dart';
 
 class DownloadsPage extends ConsumerWidget {
-  const DownloadsPage({super.key});
+  const DownloadsPage({
+    required this.onOpenApp,
+    super.key,
+  });
+
+  final Future<void> Function(String? appId, String releaseId) onOpenApp;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,6 +37,7 @@ class DownloadsPage extends ConsumerWidget {
                       ].join(' - '),
                     ),
                     trailing: _DownloadAction(job: job),
+                    onTap: () => onOpenApp(job.appId, job.releaseId),
                   ),
                 );
               },
