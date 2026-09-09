@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/apps/app_detail_page.dart';
 import '../features/apps/apps_page.dart';
+import '../features/apps/apps_repository.dart';
 import '../features/downloads/download_controller.dart';
 import '../features/downloads/downloads_page.dart';
 import '../features/settings/settings_page.dart';
@@ -30,7 +32,7 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
   int _index = 0;
   final Set<String> _installerOpenedForReleaseIds = <String>{};
 
@@ -39,6 +41,26 @@ class _AppShellState extends ConsumerState<AppShell> {
     DownloadsPage(),
     SettingsPage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(_openPendingDownloadLaunch);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_openPendingDownloadLaunch());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +89,30 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openPendingDownloadLaunch() async {
+    final launch = await ref
+        .read(downloadControllerProvider.notifier)
+        .consumePendingLaunch();
+    if (!mounted || launch == null) return;
+
+    await _openAppDetail(launch.appId, launch.releaseId);
+  }
+
+  Future<void> _openAppDetail(String? appId, String releaseId) async {
+    final apps = await ref.read(appsProvider.future);
+    if (!mounted) return;
+
+    final matchingApps = apps.where((app) {
+      return app.id == appId || app.latestRelease?.id == releaseId;
+    });
+    final app = matchingApps.isEmpty ? null : matchingApps.first;
+    if (app == null) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AppDetailPage(app: app)),
     );
   }
 

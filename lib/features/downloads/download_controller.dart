@@ -7,6 +7,7 @@ import '../apps/models/app_release.dart';
 import '../apps/models/mobile_app.dart';
 import '../installer/installer_service.dart';
 import 'download_service.dart';
+import 'native_download_manager.dart';
 
 final downloadControllerProvider =
     StateNotifierProvider<DownloadController, Map<String, DownloadJob>>((ref) {
@@ -137,7 +138,9 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
     try {
       final result = await _downloadService.downloadRelease(
         release,
+        appId: app.id,
         appName: app.name,
+        packageName: app.packageName,
         onReceiveProgress: (receivedBytes, totalBytes) {
           final current = state[release.id] ?? job;
           _setJob(
@@ -256,6 +259,10 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
   void clear(String releaseId) {
     final next = Map<String, DownloadJob>.of(state)..remove(releaseId);
     state = next;
+  }
+
+  Future<NativeDownloadLaunch?> consumePendingLaunch() {
+    return _downloadService.consumeDownloadLaunch();
   }
 
   void _setJob(DownloadJob job) {

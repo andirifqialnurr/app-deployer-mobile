@@ -27,6 +27,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         )
         val releaseId = preferences.getString(downloadReleaseIdKey(downloadId), null)
             ?: return
+        val appId = preferences.getString(downloadAppIdKey(downloadId), null)
 
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val query = DownloadManager.Query().setFilterById(downloadId)
@@ -37,7 +38,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
                 cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
             )
             if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                showCompletionNotification(context, downloadId, releaseId, preferences)
+                showCompletionNotification(context, downloadId, releaseId, appId, preferences)
                 return
             }
 
@@ -51,6 +52,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         context: Context,
         downloadId: Long,
         releaseId: String,
+        appId: String?,
         preferences: android.content.SharedPreferences,
     ) {
         val title = preferences.getString(downloadTitleKey(downloadId), null)
@@ -66,6 +68,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
             context = context,
             downloadId = downloadId,
             releaseId = releaseId,
+            appId = appId,
             title = title,
             text = text,
             icon = android.R.drawable.stat_sys_download_done,
@@ -85,6 +88,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
             context = context,
             downloadId = downloadId,
             releaseId = releaseId,
+            appId = null,
             title = title,
             text = "Tap to open App Deployer",
             icon = android.R.drawable.stat_notify_error,
@@ -95,6 +99,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         context: Context,
         downloadId: Long,
         releaseId: String,
+        appId: String?,
         title: String,
         text: String,
         icon: Int,
@@ -107,6 +112,9 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("releaseId", releaseId)
             putExtra("downloadId", downloadId)
+            if (!appId.isNullOrBlank()) {
+                putExtra("appId", appId)
+            }
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -159,6 +167,12 @@ const val DOWNLOAD_PREFERENCES_NAME = "app_deployer_downloads"
 fun downloadKey(releaseId: String): String = "release:$releaseId"
 
 fun downloadReleaseIdKey(downloadId: Long): String = "download:$downloadId:releaseId"
+
+fun downloadAppIdKey(downloadId: Long): String = "download:$downloadId:appId"
+
+fun downloadAppNameKey(downloadId: Long): String = "download:$downloadId:appName"
+
+fun downloadPackageNameKey(downloadId: Long): String = "download:$downloadId:packageName"
 
 fun downloadTitleKey(downloadId: Long): String = "download:$downloadId:title"
 

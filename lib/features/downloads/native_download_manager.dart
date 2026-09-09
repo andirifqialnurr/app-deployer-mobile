@@ -48,6 +48,26 @@ class NativeDownloadStatus {
   }
 }
 
+class NativeDownloadLaunch {
+  const NativeDownloadLaunch({
+    required this.releaseId,
+    required this.downloadId,
+    this.appId,
+  });
+
+  final String releaseId;
+  final int downloadId;
+  final String? appId;
+
+  factory NativeDownloadLaunch.fromMap(Map<dynamic, dynamic> raw) {
+    return NativeDownloadLaunch(
+      releaseId: raw['releaseId'] as String,
+      downloadId: _asInt(raw['downloadId']),
+      appId: raw['appId'] as String?,
+    );
+  }
+}
+
 class NativeDownloadManager {
   const NativeDownloadManager();
 
@@ -57,6 +77,9 @@ class NativeDownloadManager {
     required String releaseId,
     required String url,
     required String fileName,
+    required String appId,
+    required String appName,
+    required String packageName,
     required String title,
     required String description,
     required String versionName,
@@ -68,6 +91,9 @@ class NativeDownloadManager {
       'releaseId': releaseId,
       'url': url,
       'fileName': fileName,
+      'appId': appId,
+      'appName': appName,
+      'packageName': packageName,
       'title': title,
       'description': description,
       'versionName': versionName,
@@ -164,6 +190,14 @@ class NativeDownloadManager {
     );
     if (rawStatus == null) return null;
     return NativeDownloadStatus.fromMap(rawStatus);
+  }
+
+  Future<NativeDownloadLaunch?> consumeDownloadLaunch() async {
+    final rawLaunch = await _channel.invokeMethod<Map<dynamic, dynamic>?>(
+      'consumeDownloadLaunch',
+    );
+    if (rawLaunch == null) return null;
+    return NativeDownloadLaunch.fromMap(rawLaunch);
   }
 }
 

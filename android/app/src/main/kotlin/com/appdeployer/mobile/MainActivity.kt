@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
@@ -23,6 +24,17 @@ class MainActivity : FlutterActivity() {
 
     private val downloadManager by lazy {
         getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        captureDownloadLaunch(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        captureDownloadLaunch(intent)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -102,6 +114,9 @@ class MainActivity : FlutterActivity() {
                     val fileName = call.argument<String>("fileName")
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
+                    val appId = call.argument<String>("appId")
+                    val appName = call.argument<String>("appName")
+                    val packageName = call.argument<String>("packageName")
                     val versionName = call.argument<String>("versionName")
                     val versionCode = call.argument<Number>("versionCode")?.toLong()
                     val headers = call.argument<Map<*, *>>("headers") ?: emptyMap<Any, Any>()
@@ -120,6 +135,9 @@ class MainActivity : FlutterActivity() {
                             fileName = fileName,
                             title = title,
                             description = description,
+                            appId = appId,
+                            appName = appName,
+                            packageName = packageName,
                             versionName = versionName,
                             versionCode = versionCode,
                             headers = headers,
@@ -152,6 +170,9 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(findDownload(releaseId))
                 }
+                "consumeDownloadLaunch" -> {
+                    result.success(consumeDownloadLaunch())
+                }
                 else -> result.notImplemented()
             }
         }
@@ -164,6 +185,9 @@ class MainActivity : FlutterActivity() {
         fileName: String,
         title: String?,
         description: String?,
+        appId: String?,
+        appName: String?,
+        packageName: String?,
         versionName: String?,
         versionCode: Long?,
         headers: Map<*, *>,
@@ -201,6 +225,9 @@ class MainActivity : FlutterActivity() {
         downloadPreferences.edit()
             .putLong(downloadKey(releaseId), downloadId)
             .putString(downloadReleaseIdKey(downloadId), releaseId)
+            .putString(downloadAppIdKey(downloadId), appId)
+            .putString(downloadAppNameKey(downloadId), appName)
+            .putString(downloadPackageNameKey(downloadId), packageName)
             .putString(downloadTitleKey(downloadId), title ?: "APK download")
             .putString(
                 downloadVersionKey(downloadId),
@@ -208,6 +235,42 @@ class MainActivity : FlutterActivity() {
             )
             .apply()
         return downloadId
+    }
+
+    private fun captureDownloadLaunch(intent: Intent?) {
+        val releaseId = intent?.getStringExtra("releaseId") ?: return
+        val downloadId = intent.getLongExtra("downloadId", -1L)
+        val appId = intent.getStringExtra("appId")
+
+        downloadPreferences.edit()
+            .putString(PENDING_DOWNLOAD_LAUNCH_RELEASE_ID, releaseId)
+            .putLong(PENDING_DOWNLOAD_LAUNCH_DOWNLOAD_ID, downloadId)
+            .putString(PENDING_DOWNLOAD_LAUNCH_APP_ID, appId)
+            .apply()
+    }
+
+    private fun consumeDownloadLaunch(): Map<String, Any?>? {
+        val releaseId = downloadPreferences.getString(
+            PENDING_DOWNLOAD_LAUNCH_RELEASE_ID,
+            null,
+        ) ?: return null
+        val downloadId = downloadPreferences.getLong(
+            PENDING_DOWNLOAD_LAUNCH_DOWNLOAD_ID,
+            -1L,
+        )
+        val appId = downloadPreferences.getString(PENDING_DOWNLOAD_LAUNCH_APP_ID, null)
+
+        downloadPreferences.edit()
+            .remove(PENDING_DOWNLOAD_LAUNCH_RELEASE_ID)
+            .remove(PENDING_DOWNLOAD_LAUNCH_DOWNLOAD_ID)
+            .remove(PENDING_DOWNLOAD_LAUNCH_APP_ID)
+            .apply()
+
+        return mapOf(
+            "releaseId" to releaseId,
+            "downloadId" to downloadId,
+            "appId" to appId,
+        )
     }
 
     private fun findDownload(releaseId: String): Map<String, Any?>? {
@@ -374,5 +437,8 @@ class MainActivity : FlutterActivity() {
 
     private companion object {
         const val POST_NOTIFICATIONS_REQUEST_CODE = 1001
+        const val PENDING_DOWNLOAD_LAUNCH_RELEASE_ID = "pendingDownloadLaunch:releaseId"
+        const val PENDING_DOWNLOAD_LAUNCH_DOWNLOAD_ID = "pendingDownloadLaunch:downloadId"
+        const val PENDING_DOWNLOAD_LAUNCH_APP_ID = "pendingDownloadLaunch:appId"
     }
 }

@@ -22,7 +22,9 @@ class DownloadService {
 
   Future<DownloadResult> downloadRelease(
     AppRelease release, {
+    required String appId,
     required String appName,
+    required String packageName,
     void Function(int progress)? onProgress,
     void Function(int receivedBytes, int totalBytes)? onReceiveProgress,
   }) async {
@@ -70,6 +72,9 @@ class DownloadService {
         releaseId: release.id,
         url: nativeDownloadUrl,
         fileName: '${release.id}-${release.versionCode}.apk',
+        appId: appId,
+        appName: appName,
+        packageName: packageName,
         title: '$appName ${release.versionName}',
         description: 'Downloading version ${release.versionCode}',
         versionName: release.versionName,
@@ -132,6 +137,10 @@ class DownloadService {
 
   Future<bool> cancelRelease(String releaseId) {
     return _nativeDownloadManager.cancelRelease(releaseId);
+  }
+
+  Future<NativeDownloadLaunch?> consumeDownloadLaunch() {
+    return _nativeDownloadManager.consumeDownloadLaunch();
   }
 }
 
