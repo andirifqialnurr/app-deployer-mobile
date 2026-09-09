@@ -33,6 +33,7 @@
 - [x] Show download progress.
 - [x] Verify APK SHA-256.
 - [x] Keep one APK file per release.
+- [x] Open the matching app detail from a tracked download item.
 - [ ] Add retry for failed downloads.
 
 ## Phase 5: Android Install Flow
@@ -72,6 +73,7 @@
 - [x] Include the app name, version name, and version code in the system download notification.
 - [x] Poll `DownloadManager.Query` and sync native status back to Flutter.
 - [x] Restore an active download and byte progress after the app resumes.
+- [x] Restore all tracked native download jobs when the app starts or resumes.
 - [x] Listen for `DownloadManager.ACTION_DOWNLOAD_COMPLETE`.
 - [x] Verify SHA-256 after `DownloadManager` reports success.
 - [x] Auto-open the Android package installer from the completion flow when the app is in foreground.
@@ -81,6 +83,7 @@
 - [x] Safely remove cancelled or failed download jobs.
 - [x] Persist native download job ids so status survives app restart.
 - [x] Add a custom completion notification/check icon if the system DownloadManager notification is not sufficient.
+- [x] Open the matching app detail when a download completion notification is tapped.
 
 ### Phase 7C: Native Foreground Downloader and True Pause/Resume
 
