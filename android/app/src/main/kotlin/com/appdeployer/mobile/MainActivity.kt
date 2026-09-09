@@ -170,6 +170,9 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(findDownload(releaseId))
                 }
+                "listDownloads" -> {
+                    result.success(listDownloads())
+                }
                 "consumeDownloadLaunch" -> {
                     result.success(consumeDownloadLaunch())
                 }
@@ -229,6 +232,8 @@ class MainActivity : FlutterActivity() {
             .putString(downloadAppNameKey(downloadId), appName)
             .putString(downloadPackageNameKey(downloadId), packageName)
             .putString(downloadTitleKey(downloadId), title ?: "APK download")
+            .putString(downloadVersionNameKey(downloadId), versionName)
+            .putLong(downloadVersionCodeKey(downloadId), versionCode ?: 0L)
             .putString(
                 downloadVersionKey(downloadId),
                 listOfNotNull(versionName, versionCode?.toString()).joinToString(" "),
@@ -281,7 +286,37 @@ class MainActivity : FlutterActivity() {
         if (status == null) {
             clearDownloadById(downloadId)
         }
-        return status
+        return status?.withDownloadMetadata(downloadId, releaseId)
+    }
+
+    private fun listDownloads(): List<Map<String, Any?>> {
+        return downloadPreferences.all.mapNotNull { (key, value) ->
+            if (!key.startsWith("release:") || value !is Long) return@mapNotNull null
+
+            val releaseId = key.removePrefix("release:")
+            val status = queryDownload(value)
+            if (status == null) {
+                clearDownloadById(value)
+                return@mapNotNull null
+            }
+
+            status.withDownloadMetadata(value, releaseId)
+        }
+    }
+
+    private fun Map<String, Any?>.withDownloadMetadata(
+        downloadId: Long,
+        releaseId: String,
+    ): Map<String, Any?> {
+        return this + mapOf(
+            "releaseId" to releaseId,
+            "appId" to downloadPreferences.getString(downloadAppIdKey(downloadId), null),
+            "appName" to downloadPreferences.getString(downloadAppNameKey(downloadId), null),
+            "packageName" to downloadPreferences.getString(downloadPackageNameKey(downloadId), null),
+            "version" to downloadPreferences.getString(downloadVersionKey(downloadId), null),
+            "versionName" to downloadPreferences.getString(downloadVersionNameKey(downloadId), null),
+            "versionCode" to downloadPreferences.getLong(downloadVersionCodeKey(downloadId), 0L),
+        )
     }
 
     private fun queryDownload(downloadId: Long): Map<String, Any?>? {

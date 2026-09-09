@@ -177,3 +177,7 @@ fun downloadPackageNameKey(downloadId: Long): String = "download:$downloadId:pac
 fun downloadTitleKey(downloadId: Long): String = "download:$downloadId:title"
 
 fun downloadVersionKey(downloadId: Long): String = "download:$downloadId:version"
+
+fun downloadVersionNameKey(downloadId: Long): String = "download:$downloadId:versionName"
+
+fun downloadVersionCodeKey(downloadId: Long): String = "download:$downloadId:versionCode"

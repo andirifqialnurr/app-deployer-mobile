@@ -256,6 +256,53 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
     );
   }
 
+  Future<void> restoreDownloads(List<MobileApp> apps) async {
+    final nativeStatuses = await _downloadService.listDownloads();
+    final appsById = {
+      for (final app in apps) app.id: app,
+    };
+    final appsByLatestReleaseId = {
+      for (final app in apps)
+        if (app.latestRelease != null) app.latestRelease!.id: app,
+    };
+
+    for (final nativeStatus in nativeStatuses) {
+      final releaseId = nativeStatus.releaseId;
+      if (releaseId == null || state.containsKey(releaseId)) continue;
+
+      final app = nativeStatus.appId == null
+          ? appsByLatestReleaseId[releaseId]
+          : appsById[nativeStatus.appId] ?? appsByLatestReleaseId[releaseId];
+      final release = app?.latestRelease;
+      if (app == null && nativeStatus.appId == null) continue;
+
+      final totalBytes = nativeStatus.totalBytes > 0
+          ? nativeStatus.totalBytes
+          : release?.apkSizeBytes ?? 0;
+      final mappedState = _mapNativeStatus(nativeStatus.status);
+
+      _setJob(
+        DownloadJob(
+          releaseId: releaseId,
+          appId: app?.id ?? nativeStatus.appId!,
+          appName: app?.name ?? nativeStatus.appName ?? 'APK download',
+          packageName: app?.packageName ?? nativeStatus.packageName ?? '',
+          versionName: release?.versionName ??
+              nativeStatus.versionName ??
+              _versionNameFromNativeLabel(nativeStatus.version),
+          versionCode: release?.versionCode ?? nativeStatus.versionCode,
+          state: mappedState,
+          receivedBytes: nativeStatus.receivedBytes,
+          totalBytes: totalBytes,
+          filePath: nativeStatus.filePath,
+          errorMessage: mappedState == DownloadJobState.failed
+              ? 'Download gagal di Android Download Manager.'
+              : null,
+        ),
+      );
+    }
+  }
+
   void clear(String releaseId) {
     final next = Map<String, DownloadJob>.of(state)..remove(releaseId);
     state = next;
@@ -270,5 +317,21 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
       ...state,
       job.releaseId: job,
     };
+  }
+
+  DownloadJobState _mapNativeStatus(String status) {
+    return switch (status) {
+      'pending' => DownloadJobState.queued,
+      'running' => DownloadJobState.running,
+      'paused' => DownloadJobState.paused,
+      'successful' => DownloadJobState.readyToInstall,
+      'failed' => DownloadJobState.failed,
+      _ => DownloadJobState.failed,
+    };
+  }
+
+  String _versionNameFromNativeLabel(String? version) {
+    if (version == null || version.trim().isEmpty) return 'Downloaded APK';
+    return version.trim().split(' ').first;
   }
 }

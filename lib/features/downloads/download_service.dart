@@ -135,6 +135,10 @@ class DownloadService {
     return _nativeDownloadManager.findDownload(releaseId);
   }
 
+  Future<List<NativeDownloadStatus>> listDownloads() {
+    return _nativeDownloadManager.listDownloads();
+  }
+
   Future<bool> cancelRelease(String releaseId) {
     return _nativeDownloadManager.cancelRelease(releaseId);
   }

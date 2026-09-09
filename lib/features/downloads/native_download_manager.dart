@@ -26,6 +26,13 @@ class NativeDownloadStatus {
     required this.receivedBytes,
     required this.totalBytes,
     required this.reason,
+    this.releaseId,
+    this.appId,
+    this.appName,
+    this.packageName,
+    this.version,
+    this.versionName,
+    this.versionCode = 0,
     this.filePath,
   });
 
@@ -34,6 +41,13 @@ class NativeDownloadStatus {
   final int receivedBytes;
   final int totalBytes;
   final int reason;
+  final String? releaseId;
+  final String? appId;
+  final String? appName;
+  final String? packageName;
+  final String? version;
+  final String? versionName;
+  final int versionCode;
   final String? filePath;
 
   factory NativeDownloadStatus.fromMap(Map<dynamic, dynamic> raw) {
@@ -43,6 +57,13 @@ class NativeDownloadStatus {
       receivedBytes: _asInt(raw['receivedBytes']),
       totalBytes: _asInt(raw['totalBytes']),
       reason: _asInt(raw['reason']),
+      releaseId: raw['releaseId'] as String?,
+      appId: raw['appId'] as String?,
+      appName: raw['appName'] as String?,
+      packageName: raw['packageName'] as String?,
+      version: raw['version'] as String?,
+      versionName: raw['versionName'] as String?,
+      versionCode: _asInt(raw['versionCode']),
       filePath: raw['filePath'] as String?,
     );
   }
@@ -190,6 +211,18 @@ class NativeDownloadManager {
     );
     if (rawStatus == null) return null;
     return NativeDownloadStatus.fromMap(rawStatus);
+  }
+
+  Future<List<NativeDownloadStatus>> listDownloads() async {
+    final rawStatuses = await _channel.invokeMethod<List<dynamic>>(
+      'listDownloads',
+    );
+    if (rawStatuses == null) return const [];
+
+    return rawStatuses
+        .whereType<Map<dynamic, dynamic>>()
+        .map(NativeDownloadStatus.fromMap)
+        .toList(growable: false);
   }
 
   Future<NativeDownloadLaunch?> consumeDownloadLaunch() async {

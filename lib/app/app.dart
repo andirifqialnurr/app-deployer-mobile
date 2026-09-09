@@ -46,6 +46,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    Future.microtask(_restoreDownloads);
     Future.microtask(_openPendingDownloadLaunch);
   }
 
@@ -58,6 +59,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      unawaited(_restoreDownloads());
       unawaited(_openPendingDownloadLaunch());
     }
   }
@@ -99,6 +101,13 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     if (!mounted || launch == null) return;
 
     await _openAppDetail(launch.appId, launch.releaseId);
+  }
+
+  Future<void> _restoreDownloads() async {
+    final apps = await ref.read(appsProvider.future);
+    if (!mounted) return;
+
+    await ref.read(downloadControllerProvider.notifier).restoreDownloads(apps);
   }
 
   Future<void> _openAppDetail(String? appId, String releaseId) async {
