@@ -83,7 +83,7 @@ class _AppListTileState extends ConsumerState<AppListTile> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.android),
+              _AppIcon(iconUrl: app.iconUrl),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -122,6 +122,32 @@ class _AppListTileState extends ConsumerState<AppListTile> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AppIcon extends StatelessWidget {
+  const _AppIcon({required this.iconUrl});
+
+  final String? iconUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: iconUrl?.isNotEmpty == true
+          ? Image.network(
+              iconUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.android),
+            )
+          : const Icon(Icons.android),
     );
   }
 }
