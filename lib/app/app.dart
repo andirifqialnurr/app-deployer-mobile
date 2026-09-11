@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/apps/app_detail_page.dart';
 import '../features/apps/apps_page.dart';
 import '../features/apps/apps_repository.dart';
+import '../features/apps/models/mobile_app.dart';
 import '../features/downloads/download_controller.dart';
 import '../features/downloads/downloads_page.dart';
 import '../features/settings/settings_page.dart';
@@ -91,7 +92,10 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   Widget _buildPage() {
     return switch (_index) {
       0 => const AppsPage(),
-      1 => DownloadsPage(onOpenApp: _openAppDetail),
+      1 => DownloadsPage(
+          onOpenApp: _openAppDetail,
+          onRetryDownload: _retryDownload,
+        ),
       _ => const SettingsPage(),
     };
   }
@@ -136,6 +140,47 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => AppDetailPage(app: app)),
     );
+  }
+
+  Future<void> _retryDownload(DownloadJob job) async {
+    final apps = await (() async {
+      try {
+        return await ref.read(appsProvider.future);
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal retry download: $error')),
+          );
+        }
+        return const [];
+      }
+    })();
+    if (!mounted) return;
+
+    MobileApp? app;
+    for (final candidate in apps) {
+      if (candidate.id == job.appId ||
+          candidate.latestRelease?.id == job.releaseId) {
+        app = candidate;
+        break;
+      }
+    }
+
+    final release = app?.latestRelease;
+    if (app == null || release == null || release.id != job.releaseId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Buka detail app untuk mencoba download ulang.'),
+        ),
+      );
+      await _openAppDetail(job.appId, job.releaseId);
+      return;
+    }
+
+    await ref.read(downloadControllerProvider.notifier).startDownload(
+          app,
+          release,
+        );
   }
 
   void _handleDownloadJobs(

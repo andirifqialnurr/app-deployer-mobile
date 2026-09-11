@@ -34,7 +34,7 @@
 - [x] Verify APK SHA-256.
 - [x] Keep one APK file per release.
 - [x] Open the matching app detail from a tracked download item.
-- [ ] Add retry for failed downloads.
+- [x] Add retry for failed downloads.
 
 ## Phase 5: Android Install Flow
 

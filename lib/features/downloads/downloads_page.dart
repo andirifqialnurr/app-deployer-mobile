@@ -6,10 +6,12 @@ import 'download_controller.dart';
 class DownloadsPage extends ConsumerWidget {
   const DownloadsPage({
     required this.onOpenApp,
+    required this.onRetryDownload,
     super.key,
   });
 
   final Future<void> Function(String? appId, String releaseId) onOpenApp;
+  final Future<void> Function(DownloadJob job) onRetryDownload;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +38,10 @@ class DownloadsPage extends ConsumerWidget {
                           '${_formatBytes(job.receivedBytes)} / ${_formatBytes(job.totalBytes)}',
                       ].join(' - '),
                     ),
-                    trailing: _DownloadAction(job: job),
+                    trailing: _DownloadAction(
+                      job: job,
+                      onRetryDownload: onRetryDownload,
+                    ),
                     onTap: () => onOpenApp(job.appId, job.releaseId),
                   ),
                 );
@@ -79,9 +84,13 @@ class _DownloadIcon extends StatelessWidget {
 }
 
 class _DownloadAction extends ConsumerWidget {
-  const _DownloadAction({required this.job});
+  const _DownloadAction({
+    required this.job,
+    required this.onRetryDownload,
+  });
 
   final DownloadJob job;
+  final Future<void> Function(DownloadJob job) onRetryDownload;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -113,12 +122,21 @@ class _DownloadAction extends ConsumerWidget {
 
     if (job.state == DownloadJobState.failed ||
         job.state == DownloadJobState.cancelled) {
-      return IconButton(
-        tooltip: 'Clear',
-        onPressed: () {
-          ref.read(downloadControllerProvider.notifier).clear(job.releaseId);
-        },
-        icon: const Icon(Icons.close),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => onRetryDownload(job),
+            child: const Text('Retry'),
+          ),
+          IconButton(
+            tooltip: 'Clear',
+            onPressed: () {
+              ref.read(downloadControllerProvider.notifier).clear(job.releaseId);
+            },
+            icon: const Icon(Icons.close),
+          ),
+        ],
       );
     }
 
