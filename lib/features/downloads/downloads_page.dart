@@ -27,22 +27,52 @@ class DownloadsPage extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final job = jobs[index];
                 return Card(
-                  child: ListTile(
-                    leading: _DownloadIcon(job: job),
-                    title: Text(job.appName),
-                    subtitle: Text(
-                      [
-                        '${job.versionName} (${job.versionCode})',
-                        _jobLabel(job),
-                        if (job.totalBytes > 0)
-                          '${_formatBytes(job.receivedBytes)} / ${_formatBytes(job.totalBytes)}',
-                      ].join(' - '),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: job.isActive
+                        ? () => ref
+                            .read(downloadControllerProvider.notifier)
+                            .cancelDownload(job.releaseId)
+                        : () => onOpenApp(job.appId, job.releaseId),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          _DownloadIcon(job: job),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    job.appName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    [
+                                      '${job.versionName} (${job.versionCode})',
+                                      _jobLabel(job),
+                                      if (job.totalBytes > 0)
+                                        '${_formatBytes(job.receivedBytes)} / ${_formatBytes(job.totalBytes)}',
+                                    ].join(' - '),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _DownloadAction(
+                            job: job,
+                            onRetryDownload: onRetryDownload,
+                          ),
+                        ],
+                      ),
                     ),
-                    trailing: _DownloadAction(
-                      job: job,
-                      onRetryDownload: onRetryDownload,
-                    ),
-                    onTap: () => onOpenApp(job.appId, job.releaseId),
                   ),
                 );
               },
@@ -76,7 +106,7 @@ class _DownloadIcon extends StatelessWidget {
       width: 40,
       height: 40,
       child: CircularProgressIndicator(
-        value: job.progressPercent > 0 ? job.progressPercent / 100 : null,
+        value: job.totalBytes > 0 ? job.progressPercent / 100 : null,
         strokeWidth: 3,
       ),
     );
@@ -111,12 +141,12 @@ class _DownloadAction extends ConsumerWidget {
     }
 
     if (job.isActive) {
-      return IconButton(
-        tooltip: 'Cancel download',
+      return TextButton.icon(
         onPressed: () {
           ref.read(downloadControllerProvider.notifier).cancelDownload(job.releaseId);
         },
         icon: const Icon(Icons.close),
+        label: const Text('Cancel'),
       );
     }
 

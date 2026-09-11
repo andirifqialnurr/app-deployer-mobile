@@ -142,6 +142,8 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
         appName: app.name,
         packageName: app.packageName,
         onReceiveProgress: (receivedBytes, totalBytes) {
+          if (_cancelledReleaseIds.contains(release.id)) return;
+
           final current = state[release.id] ?? job;
           _setJob(
             current.copyWith(
@@ -153,6 +155,8 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
           );
         },
       );
+
+      if (_cancelledReleaseIds.contains(release.id)) return;
 
       final current = state[release.id] ?? job;
       _setJob(current.copyWith(state: DownloadJobState.verifying));
@@ -193,17 +197,19 @@ class DownloadController extends StateNotifier<Map<String, DownloadJob>> {
 
   Future<void> cancelDownload(String releaseId) async {
     _cancelledReleaseIds.add(releaseId);
-    await _downloadService.cancelRelease(releaseId);
+    _activeReleaseIds.remove(releaseId);
 
     final job = state[releaseId];
-    if (job == null) return;
+    if (job != null) {
+      _setJob(
+        job.copyWith(
+          state: DownloadJobState.cancelled,
+          errorMessage: 'Download cancelled.',
+        ),
+      );
+    }
 
-    _setJob(
-      job.copyWith(
-        state: DownloadJobState.cancelled,
-        errorMessage: 'Download cancelled.',
-      ),
-    );
+    await _downloadService.cancelRelease(releaseId);
   }
 
   Future<bool> openInstaller(String releaseId) async {

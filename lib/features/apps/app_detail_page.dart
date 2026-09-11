@@ -179,7 +179,7 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
         if (job?.isActive == true || job?.state == DownloadJobState.readyToInstall) ...[
           const SizedBox(height: 16),
           LinearProgressIndicator(
-            value: job!.progressPercent > 0 ? job.progressPercent / 100 : null,
+            value: job!.totalBytes > 0 ? job.progressPercent / 100 : null,
           ),
           const SizedBox(height: 8),
           Text(_downloadStatusText(job)),
