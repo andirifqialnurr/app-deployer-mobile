@@ -140,7 +140,7 @@
 - [ ] Test interrupted download, retry, app restart, and device rotation.
 - [ ] Test checksum failure and expired download URL.
 - [ ] Review `REQUEST_INSTALL_PACKAGES` and `QUERY_ALL_PACKAGES` against the intended distribution channel.
-- [ ] Document why package installation and package visibility permissions are required.
+- [x] Document why package installation and package visibility permissions are required.
 
 ## Phase 12: OneSignal Update Notifications
 
