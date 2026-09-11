@@ -384,7 +384,9 @@ class _AppDetailPageState extends ConsumerState<AppDetailPage>
     }
 
     if (job?.state == DownloadJobState.readyToInstall) {
-      return 'Install';
+      return _status.state == InstallState.updateAvailable
+          ? 'Update'
+          : 'Install';
     }
 
     return switch (_status.state) {

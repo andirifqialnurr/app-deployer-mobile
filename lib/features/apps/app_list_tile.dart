@@ -69,21 +69,8 @@ class _AppListTileState extends ConsumerState<AppListTile> {
           );
 
     return Card(
-      child: ListTile(
-        leading: const Icon(Icons.android),
-        title: Text(app.name),
-        subtitle: Text(
-          release == null ? app.packageName : '${app.packageName} - v${release.versionName}',
-        ),
-        trailing: Wrap(
-          spacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _StatusChip(status: _status),
-            if (downloadJob != null) _DownloadStatusChip(job: downloadJob),
-            const Icon(Icons.chevron_right),
-          ],
-        ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(
@@ -92,6 +79,48 @@ class _AppListTileState extends ConsumerState<AppListTile> {
           );
           await _loadStatus();
         },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.android),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      app.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      release == null
+                          ? app.packageName
+                          : '${app.packageName} - v${release.versionName}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _StatusChip(status: _status),
+                        if (downloadJob != null) _DownloadStatusChip(job: downloadJob),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ),
     );
   }
